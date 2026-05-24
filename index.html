@@ -89,57 +89,50 @@
   /* ── Calibration overlay (on top of live camera) ── */
   #cal-overlay {
     position: absolute; inset: 0; z-index: 8;
-    display: none; flex-direction: column; align-items: center; justify-content: space-between;
-    padding: calc(env(safe-area-inset-top,0px) + 16px) 0 calc(env(safe-area-inset-bottom,0px) + 20px);
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    padding: calc(env(safe-area-inset-top,0px) + 16px) 20px calc(env(safe-area-inset-bottom,0px) + 20px);
     pointer-events: none;
   }
   #cal-overlay.active { display: flex; pointer-events: all; }
 
-  /* horizontal aim line drawn across full width */
-  #cal-aim-line {
-    position: absolute; left: 0; right: 0; height: 1px;
-    background: rgba(255,200,0,0.85); top: 50%;
-    pointer-events: none;
-  }
-  #cal-aim-label {
-    position: absolute; top: calc(50% + 6px); left: 50%;
-    transform: translateX(-50%);
-    font-size: 9px; color: rgba(255,200,0,0.7); letter-spacing: 2px;
-    pointer-events: none;
+  #cal-close-btn {
+    position: absolute; top: calc(env(safe-area-inset-top,0px) + 14px); right: 16px;
+    background: rgba(0,0,0,0.6); border: 1px solid #333; border-radius: 50%;
+    width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: #888; font-size: 16px; -webkit-tap-highlight-color: transparent;
   }
 
-  /* top panel */
-  .cal-top-panel {
-    background: rgba(0,0,0,0.7); border: 1px solid #222; border-radius: 10px;
-    padding: 12px 16px; display: flex; flex-direction: column; align-items: center;
-    gap: 6px; width: calc(100% - 40px); max-width: 320px;
+  .cal-panel {
+    background: rgba(0,0,0,0.82); border: 1px solid #222; border-radius: 12px;
+    padding: 18px 16px; display: flex; flex-direction: column; align-items: center;
+    gap: 14px; width: 100%; max-width: 320px;
   }
   .cal-title { font-size: 10px; letter-spacing: 3px; color: #555; text-transform: uppercase; }
-  .cal-instruction-live { font-size: 11px; color: #888; text-align: center; line-height: 1.5; font-family: system-ui, sans-serif; }
-  .cal-pitch-big { font-size: 36px; font-weight: 700; color: #0f0; letter-spacing: -2px; line-height: 1; }
-  .cal-pitch-unit-sm { font-size: 14px; color: #0a0; }
+  .cal-desc {
+    font-size: 11px; color: #666; text-align: center; line-height: 1.6;
+    font-family: system-ui, sans-serif;
+  }
 
-  /* bottom panel with mark buttons */
-  .cal-bottom-panel {
-    display: flex; flex-direction: column; align-items: center; gap: 10px;
-    width: calc(100% - 40px); max-width: 320px;
+  .cal-inputs { display: flex; gap: 10px; width: 100%; }
+  .cal-input-group { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .cal-input-label { font-size: 9px; letter-spacing: 2px; color: #444; text-transform: uppercase; }
+  .cal-input-row {
+    display: flex; align-items: center; gap: 6px;
+    background: #111; border: 1px solid #222; border-radius: 8px; padding: 8px 10px;
   }
-  .cal-marks-row { display: flex; gap: 10px; width: 100%; }
-  .cal-mark-btn {
-    flex: 1; background: rgba(0,0,0,0.75); border: 1px solid #333; border-radius: 10px;
-    color: #666; font-family: 'Courier New', monospace; font-size: 10px;
-    letter-spacing: 1px; text-transform: uppercase; padding: 12px 6px;
-    cursor: pointer; text-align: center; line-height: 1.5;
-    -webkit-tap-highlight-color: transparent;
+  .cal-input-row input[type=number] {
+    background: transparent; border: none; outline: none; color: #0f0;
+    font-family: 'Courier New', monospace; font-size: 20px; font-weight: 700;
+    width: 100%; -moz-appearance: textfield;
   }
-  .cal-mark-btn.set { border-color: #0f0; color: #0f0; background: rgba(0,20,0,0.85); }
-  .cal-mark-btn:active { background: rgba(0,40,0,0.9); }
-  .cal-mark-val { font-size: 14px; font-weight: 700; display: block; margin-top: 3px; }
+  .cal-input-row input[type=number]::-webkit-inner-spin-button,
+  .cal-input-row input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .cal-input-unit { font-size: 10px; color: #444; white-space: nowrap; }
 
   #cal-result-bar {
     display: none; background: rgba(0,20,0,0.85); border: 1px solid #0f0;
     border-radius: 8px; padding: 10px 16px; width: 100%;
-    display: none; align-items: center; justify-content: space-between; gap: 10px;
+    align-items: center; justify-content: space-between; gap: 10px;
   }
   #cal-result-bar.visible { display: flex; }
   .cal-res-label { font-size: 9px; color: #4a8a4a; letter-spacing: 2px; text-transform: uppercase; }
@@ -151,18 +144,6 @@
     cursor: pointer; -webkit-tap-highlight-color: transparent; white-space: nowrap;
   }
   #apply-cal-btn:active { opacity: 0.7; }
-
-  #cal-close-btn {
-    position: absolute; top: calc(env(safe-area-inset-top,0px) + 14px); right: 16px;
-    background: rgba(0,0,0,0.6); border: 1px solid #333; border-radius: 50%;
-    width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: #888; font-size: 16px; -webkit-tap-highlight-color: transparent;
-  }
-
-  #cal-perm-err {
-    font-size: 11px; color: #f66; text-align: center; line-height: 1.6;
-    font-family: system-ui, sans-serif; display: none; padding: 0 16px;
-  }
 
   /* ── Record button ── */
   #rec-btn {
@@ -264,35 +245,37 @@
 
   <!-- Calibration overlay — shown on top of live camera -->
   <div id="cal-overlay">
-    <div id="cal-aim-line"></div>
-    <div id="cal-aim-label">AIM HERE</div>
-
     <div id="cal-close-btn">✕</div>
-
-    <div class="cal-top-panel">
+    <div class="cal-panel">
       <div class="cal-title">Calibrate VFOV</div>
-      <p class="cal-instruction-live">Aim the centre line at the <b style="color:#fc0">top edge</b> of a target, tap Mark Top. Then aim at the <b style="color:#fc0">bottom edge</b> and tap Mark Bottom.</p>
-      <div>
-        <span class="cal-pitch-big" id="live-pitch-val">—</span>
-        <span class="cal-pitch-unit-sm">°</span>
-      </div>
-      <div id="cal-perm-err">Motion access denied.<br>Settings → Safari → Motion & Orientation Access → On</div>
-    </div>
+      <p class="cal-desc">
+        Point the bottom of frame at the base of a ruler.<br>
+        Enter the ruler length visible in frame and your distance to it.
+      </p>
+      <p class="cal-desc" style="color:#fc0;font-size:10px;">
+        VFOV = atan(ruler height / distance)
+      </p>
 
-    <div class="cal-bottom-panel">
-      <div class="cal-marks-row">
-        <button class="cal-mark-btn" id="mark-top-btn">
-          Top edge<br>
-          <span class="cal-mark-val" id="mark-top-val">—</span>
-        </button>
-        <button class="cal-mark-btn" id="mark-bot-btn">
-          Bottom edge<br>
-          <span class="cal-mark-val" id="mark-bot-val">—</span>
-        </button>
+      <div class="cal-inputs">
+        <div class="cal-input-group">
+          <span class="cal-input-label">Ruler height</span>
+          <div class="cal-input-row">
+            <input type="number" id="cal-ruler" min="1" max="9999" value="100" />
+            <span class="cal-input-unit">cm</span>
+          </div>
+        </div>
+        <div class="cal-input-group">
+          <span class="cal-input-label">Distance</span>
+          <div class="cal-input-row">
+            <input type="number" id="cal-dist" min="1" max="99999" value="100" />
+            <span class="cal-input-unit">cm</span>
+          </div>
+        </div>
       </div>
+
       <div id="cal-result-bar">
         <div>
-          <div class="cal-res-label">Measured VFOV</div>
+          <div class="cal-res-label">VFOV</div>
           <div class="cal-res-val" id="cal-res-val">—</div>
         </div>
         <button id="apply-cal-btn">Apply ✓</button>
@@ -372,80 +355,43 @@ let recStartTime = null;
 let recTimerInterval = null;
 let isRecording = false;
 
-// ── Pitch sensor ─────────────────────────────────────────────
-let currentPitch = null;
-let markTop = null;
-let markBot = null;
-let sensorActive = false;
-let measuredVfov = null;
+// ── Trig calibration ─────────────────────────────────────────
+const calOverlay  = document.getElementById('cal-overlay');
+const calHudBtn   = document.getElementById('cal-hud-btn');
+const calCloseBtn = document.getElementById('cal-close-btn');
+const calRuler    = document.getElementById('cal-ruler');
+const calDist     = document.getElementById('cal-dist');
+const calResultBar = document.getElementById('cal-result-bar');
+const calResVal   = document.getElementById('cal-res-val');
+const applyCalBtn = document.getElementById('apply-cal-btn');
 
-function onOrientation(e) {
-  if (e.beta === null) return;
-  currentPitch = e.beta;
-  livePitchVal.textContent = currentPitch.toFixed(1);
-}
-
-function startSensor() {
-  if (sensorActive) return;
-  if (typeof DeviceOrientationEvent !== 'undefined' &&
-      typeof DeviceOrientationEvent.requestPermission === 'function') {
-    DeviceOrientationEvent.requestPermission()
-      .then(state => {
-        if (state === 'granted') {
-          window.addEventListener('deviceorientation', onOrientation);
-          sensorActive = true; calPermErr.style.display = 'none';
-        } else { calPermErr.style.display = 'block'; }
-      })
-      .catch(() => { calPermErr.style.display = 'block'; });
-  } else {
-    window.addEventListener('deviceorientation', onOrientation);
-    sensorActive = true;
-  }
-}
-
-function resetCal() {
-  markTop = null; markBot = null; measuredVfov = null;
-  markTopVal.textContent = '—'; markBotVal.textContent = '—';
-  markTopBtn.classList.remove('set'); markBotBtn.classList.remove('set');
-  calResultBar.classList.remove('visible');
-}
-
-function tryComputeVFOV() {
-  if (markTop === null || markBot === null) return;
-  measuredVfov = Math.abs(markTop - markBot);
-  calResVal.textContent = measuredVfov.toFixed(1) + '°';
+function computeVFOV() {
+  const h = parseFloat(calRuler.value);
+  const d = parseFloat(calDist.value);
+  if (!h || !d || d <= 0) { calResultBar.classList.remove('visible'); return; }
+  const vfovRad = Math.atan(h / d);
+  const vfovDeg = vfovRad * (180 / Math.PI);
+  calResVal.textContent = vfovDeg.toFixed(1) + '°';
   calResultBar.classList.add('visible');
+  applyCalBtn._vfov = vfovDeg;
 }
+
+calRuler.addEventListener('input', computeVFOV);
+calDist.addEventListener('input', computeVFOV);
 
 calHudBtn.addEventListener('click', () => {
-  resetCal();
+  computeVFOV();
   calOverlay.classList.add('active');
-  startSensor();
 });
 
 calCloseBtn.addEventListener('click', () => {
   calOverlay.classList.remove('active');
 });
 
-markTopBtn.addEventListener('click', () => {
-  if (currentPitch === null) return;
-  markTop = currentPitch;
-  markTopVal.textContent = currentPitch.toFixed(1) + '°';
-  markTopBtn.classList.add('set');
-  tryComputeVFOV();
-});
-
-markBotBtn.addEventListener('click', () => {
-  if (currentPitch === null) return;
-  markBot = currentPitch;
-  markBotVal.textContent = currentPitch.toFixed(1) + '°';
-  markBotBtn.classList.add('set');
-  tryComputeVFOV();
-});
-
 applyCalBtn.addEventListener('click', () => {
-  if (!measuredVfov) return;
-  fov = Math.max(5, Math.min(180, Math.round(measuredVfov * 10) / 10));
+  const v = applyCalBtn._vfov;
+  if (!v) return;
+  fov = Math.max(5, Math.min(180, Math.round(v * 10) / 10));
   fovInput.value = fov;
   fovLiveInput.value = fov;
   hudFov.textContent = fov + '°';
