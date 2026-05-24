@@ -4,446 +4,232 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>FOV Overlay</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 100%; height: 100%; background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
+  html, body { width: 100%; height: 100%; background: #000; font-family: 'Courier New', monospace; overflow: hidden; }
 
-  #app { position: relative; width: 100%; height: 100svh; background: #000; overflow: hidden; }
-  #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  #overlay-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-  #comp-canvas { display: none; }
+  /* ── shared screen base ── */
+  .screen {
+    position: absolute; inset: 0; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 22px; padding: 40px 28px;
+    background: #000; overflow-y: auto;
+  }
+  .screen.active { display: flex; }
 
-  /* ── Start screen ── */
-  #start-screen {
-    position: absolute; inset: 0; background: #000;
-    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-    gap: 16px; z-index: 10; padding: 44px 28px 32px; overflow-y: auto;
-  }
-  .logo { font-size: 11px; letter-spacing: 4px; color: #555; text-transform: uppercase; }
-  h1 { font-size: 24px; font-weight: 700; color: #fff; text-align: center; line-height: 1.2; margin-bottom: 4px; }
-  .section-title {
-    font-size: 10px; letter-spacing: 3px; color: #333; text-transform: uppercase;
-    width: 100%; max-width: 300px; padding-bottom: 8px; border-bottom: 1px solid #1a1a1a;
-  }
+  .logo { font-size: 10px; letter-spacing: 4px; color: #444; text-transform: uppercase; }
+  .screen-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.5px; text-align: center; }
+  .screen-sub { font-size: 12px; color: #555; text-align: center; line-height: 1.7; font-family: system-ui, sans-serif; max-width: 260px; }
 
-  /* ── Manual FOV ── */
-  .fov-input-wrap { width: 100%; max-width: 300px; }
-  .fov-label { font-size: 10px; letter-spacing: 3px; color: #555; text-transform: uppercase; margin-bottom: 10px; display: block; }
-  .fov-row { display: flex; align-items: center; gap: 10px; background: #111; border: 1px solid #222; border-radius: 8px; padding: 10px 14px; }
-  .fov-row input[type=number] {
-    background: transparent; border: none; outline: none; color: #0f0;
-    font-family: 'Courier New', monospace; font-size: 22px; font-weight: 700;
-    width: 80px; flex: 1; -moz-appearance: textfield;
+  /* ── number input ── */
+  .big-input-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; max-width: 280px; }
+  .big-input-label { font-size: 10px; letter-spacing: 3px; color: #444; text-transform: uppercase; }
+  .big-input-row { display: flex; align-items: center; gap: 10px; background: #111; border: 1px solid #222; border-radius: 10px; padding: 10px 16px; width: 100%; }
+  .big-input-row input[type=number] {
+    background: transparent; border: none; outline: none;
+    color: #0f0; font-family: 'Courier New', monospace;
+    font-size: 36px; font-weight: 700; flex: 1; width: 0;
+    -moz-appearance: textfield;
   }
-  .fov-row input[type=number]::-webkit-inner-spin-button,
-  .fov-row input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
-  .fov-unit { font-size: 11px; color: #444; letter-spacing: 1px; }
-  .fov-stepper { display: flex; flex-direction: column; gap: 3px; }
-  .fov-stepper button {
-    background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 4px;
-    color: #888; font-size: 11px; width: 32px; height: 26px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .fov-stepper button:active { background: #222; color: #0f0; }
+  .big-input-row input::-webkit-inner-spin-button,
+  .big-input-row input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .big-unit { font-size: 13px; color: #444; }
 
-  #presets { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 300px; }
-  .preset-btn {
-    background: transparent; border: 1px solid #2a2a2a; border-radius: 20px;
-    color: #555; font-size: 10px; letter-spacing: 1px; padding: 6px 13px;
-    cursor: pointer; font-family: 'Courier New', monospace; white-space: nowrap;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .preset-btn.active { border-color: #0f0; color: #0f0; }
+  /* two-column inputs */
+  .input-row-2 { display: flex; gap: 12px; width: 100%; max-width: 280px; }
+  .input-col { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .input-col label { font-size: 10px; letter-spacing: 2px; color: #444; text-transform: uppercase; }
+  .input-col .big-input-row { padding: 8px 12px; }
+  .input-col .big-input-row input { font-size: 26px; }
 
-  #start-btn {
+  /* ── result box ── */
+  .result-box {
+    width: 100%; max-width: 280px;
+    background: #0a1a0a; border: 1px solid #1a3a1a; border-radius: 10px;
+    padding: 14px 16px; text-align: center; display: none;
+  }
+  .result-box.visible { display: block; }
+  .result-label { font-size: 10px; letter-spacing: 3px; color: #4a7a4a; text-transform: uppercase; margin-bottom: 6px; }
+  .result-val { font-size: 42px; font-weight: 700; color: #0f0; letter-spacing: -2px; line-height: 1; }
+  .result-unit { font-size: 16px; color: #0a0; }
+  .result-formula { font-size: 10px; color: #2a4a2a; margin-top: 6px; font-family: system-ui, sans-serif; }
+
+  /* ── buttons ── */
+  .btn-green {
     background: #0f0; color: #000; border: none; border-radius: 8px;
     font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
-    padding: 16px; cursor: pointer; font-family: 'Courier New', monospace;
-    -webkit-tap-highlight-color: transparent; width: 100%; max-width: 300px;
+    padding: 15px; cursor: pointer; font-family: 'Courier New', monospace;
+    width: 100%; max-width: 280px; -webkit-tap-highlight-color: transparent;
   }
-  #start-btn:active { opacity: 0.7; }
+  .btn-green:active { opacity: 0.7; }
 
-  /* ── Camera HUD ── */
-  #hud {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    padding: 16px 24px; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(transparent, rgba(0,0,0,0.7));
-    display: none; align-items: flex-end; justify-content: space-between; z-index: 5;
+  .btn-outline {
+    background: transparent; color: #555; border: 1px solid #2a2a2a; border-radius: 8px;
+    font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 13px; cursor: pointer; font-family: 'Courier New', monospace;
+    width: 100%; max-width: 280px; -webkit-tap-highlight-color: transparent;
   }
-  .hud-side { width: 64px; flex-shrink: 0; }
-  .hud-fov-val { font-size: 22px; font-weight: 700; color: #0f0; letter-spacing: -1px; line-height: 1; }
-  .hud-label { font-size: 9px; color: #0a0; letter-spacing: 2px; margin-top: 2px; }
+  .btn-outline:active { border-color: #0f0; color: #0f0; }
 
-  /* calibrate button in HUD */
-  #cal-hud-btn {
-    background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 8px;
-    color: #aaa; font-family: 'Courier New', monospace; font-size: 9px;
-    letter-spacing: 1px; text-transform: uppercase; padding: 6px 10px;
-    cursor: pointer; -webkit-tap-highlight-color: transparent; white-space: nowrap;
+  .divider {
+    font-size: 10px; color: #2a2a2a; letter-spacing: 2px;
+    display: flex; align-items: center; gap: 10px; width: 100%; max-width: 280px;
   }
-  #cal-hud-btn:active { border-color: #0f0; color: #0f0; }
+  .divider::before, .divider::after { content:''; flex:1; height:1px; background:#1a1a1a; }
 
-  /* ── Calibration overlay (on top of live camera) ── */
-  #cal-overlay {
-    position: absolute; inset: 0; z-index: 8;
-    display: none; flex-direction: column; align-items: center; justify-content: center;
-    padding: calc(env(safe-area-inset-top,0px) + 16px) 20px calc(env(safe-area-inset-bottom,0px) + 20px);
-  }
-  #cal-overlay.active { display: flex; }
+  /* ── camera screen ── */
+  #screen-cam { padding: 0; background: #000; }
+  #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  #overlay-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
-  #cal-close-btn {
-    position: absolute; top: calc(env(safe-area-inset-top,0px) + 14px); right: 16px;
-    background: rgba(0,0,0,0.6); border: 1px solid #333; border-radius: 50%;
-    width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: #888; font-size: 16px; -webkit-tap-highlight-color: transparent;
-  }
-
-  .cal-panel {
-    background: rgba(0,0,0,0.82); border: 1px solid #222; border-radius: 12px;
-    padding: 18px 16px; display: flex; flex-direction: column; align-items: center;
-    gap: 14px; width: 100%; max-width: 320px;
-  }
-  .cal-title { font-size: 10px; letter-spacing: 3px; color: #555; text-transform: uppercase; }
-  .cal-desc {
-    font-size: 11px; color: #666; text-align: center; line-height: 1.6;
-    font-family: system-ui, sans-serif;
-  }
-
-  .cal-inputs { display: flex; gap: 10px; width: 100%; }
-  .cal-input-group { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-  .cal-input-label { font-size: 9px; letter-spacing: 2px; color: #444; text-transform: uppercase; }
-  .cal-input-row {
-    display: flex; align-items: center; gap: 6px;
-    background: #111; border: 1px solid #222; border-radius: 8px; padding: 8px 10px;
-  }
-  .cal-input-row input[type=number] {
-    background: transparent; border: none; outline: none; color: #0f0;
-    font-family: 'Courier New', monospace; font-size: 20px; font-weight: 700;
-    width: 100%; -moz-appearance: textfield;
-  }
-  .cal-input-row input[type=number]::-webkit-inner-spin-button,
-  .cal-input-row input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
-  .cal-input-unit { font-size: 10px; color: #444; white-space: nowrap; }
-
-  #cal-result-bar {
-    display: none; background: rgba(0,20,0,0.85); border: 1px solid #0f0;
-    border-radius: 8px; padding: 10px 16px; width: 100%;
-    align-items: center; justify-content: space-between; gap: 10px;
-  }
-  #cal-result-bar.visible { display: flex; }
-  .cal-res-label { font-size: 9px; color: #4a8a4a; letter-spacing: 2px; text-transform: uppercase; }
-  .cal-res-val { font-size: 22px; font-weight: 700; color: #0f0; }
-  #apply-cal-btn {
-    background: #0f0; color: #000; border: none; border-radius: 6px;
-    font-family: 'Courier New', monospace; font-size: 10px; font-weight: 700;
+  #cam-back {
+    position: absolute; top: calc(env(safe-area-inset-top,0px) + 14px); left: 16px;
+    background: rgba(0,0,0,0.6); border: 1px solid #333; border-radius: 8px;
+    color: #aaa; font-family: 'Courier New', monospace; font-size: 10px;
     letter-spacing: 1px; text-transform: uppercase; padding: 8px 14px;
-    cursor: pointer; -webkit-tap-highlight-color: transparent; white-space: nowrap;
+    cursor: pointer; z-index: 10; -webkit-tap-highlight-color: transparent;
   }
-  #apply-cal-btn:active { opacity: 0.7; }
-
-  /* ── Record button ── */
-  #rec-btn {
-    position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
-    width: 64px; height: 64px; border-radius: 50%; border: 3px solid #fff;
-    background: rgba(0,0,0,0.35); cursor: pointer; display: none;
-    align-items: center; justify-content: center;
-    -webkit-tap-highlight-color: transparent; z-index: 6;
-  }
-  #rec-btn .inner {
-    width: 44px; height: 44px; border-radius: 50%; background: #f33;
-    transition: border-radius 0.2s, width 0.2s, height 0.2s;
-  }
-  #rec-btn.recording .inner { border-radius: 6px; width: 26px; height: 26px; }
-
-  #rec-indicator {
-    position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); left: 16px;
-    display: none; align-items: center; gap: 8px; z-index: 5;
-  }
-  .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: #f33; animation: blink 1s infinite; }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-  #rec-dur { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: 2px; }
-
-  #close-btn {
-    background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 50%;
-    width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: #888; font-size: 18px; -webkit-tap-highlight-color: transparent;
-  }
-
-  #fov-live-wrap {
-    position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); right: 16px;
-    display: none; flex-direction: column; align-items: flex-end; gap: 4px; z-index: 5;
-  }
-  #fov-live-input {
-    background: rgba(0,0,0,0.6); border: 1px solid #0f0; border-radius: 6px;
-    color: #0f0; font-family: 'Courier New', monospace; font-size: 18px; font-weight: 700;
-    width: 74px; text-align: center; padding: 5px 6px; -moz-appearance: textfield; outline: none;
-  }
-  #fov-live-input::-webkit-inner-spin-button,
-  #fov-live-input::-webkit-outer-spin-button { -webkit-appearance: none; }
-  .live-label { font-size: 9px; color: #0a0; letter-spacing: 2px; }
-
-  #toast {
-    position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.85); border: 1px solid #0f0; border-radius: 8px;
-    color: #0f0; font-size: 12px; padding: 10px 20px; letter-spacing: 1px;
-    display: none; white-space: nowrap; z-index: 20; text-align: center; line-height: 1.6;
-  }
-  #err-msg {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    color: #f66; font-size: 13px; text-align: center; padding: 20px 24px;
-    letter-spacing: 0.5px; line-height: 1.7; display: none; z-index: 20;
-    background: rgba(0,0,0,0.9); border-radius: 10px; border: 1px solid #f44;
-    max-width: 280px; font-family: system-ui, sans-serif;
+  #cam-fov-label {
+    position: absolute; bottom: calc(env(safe-area-inset-bottom,0px) + 24px);
+    left: 50%; transform: translateX(-50%);
+    color: #0f0; font-size: 12px; letter-spacing: 2px; z-index: 10;
+    background: rgba(0,0,0,0.55); padding: 6px 16px; border-radius: 6px;
+    white-space: nowrap;
   }
 </style>
 </head>
 <body>
-<div id="app">
 
-  <!-- Start screen -->
-  <div id="start-screen">
-    <div class="logo">Fieldview</div>
-    <h1>FOV Overlay</h1>
+<!-- Screen 1: Home -->
+<div class="screen active" id="screen-home">
+  <div class="logo">Fieldview</div>
+  <div class="screen-title">FOV Overlay</div>
 
-    <span class="section-title">Set VFOV</span>
-
-    <div class="fov-input-wrap">
-      <span class="fov-label">Vertical FOV</span>
-      <div class="fov-row">
-        <input type="number" id="fov-input" min="5" max="180" value="49" />
-        <span class="fov-unit">DEG</span>
-        <div class="fov-stepper">
-          <button id="fov-up">▲</button>
-          <button id="fov-dn">▼</button>
-        </div>
-      </div>
+  <div class="big-input-wrap">
+    <span class="big-input-label">Vertical FOV</span>
+    <div class="big-input-row">
+      <input type="number" id="fov-val" min="1" max="180" value="66" />
+      <span class="big-unit">°</span>
     </div>
-
-    <div id="presets">
-      <button class="preset-btn" data-fov="46">iPhone (1×)</button>
-      <button class="preset-btn" data-fov="72">iPhone (UW)</button>
-      <button class="preset-btn" data-fov="66">My camera</button>
-      <button class="preset-btn" data-fov="73">GoPro 12</button>
-      <button class="preset-btn" data-fov="49">DJI Mini 3</button>
-    </div>
-
-    <p style="font-size:11px;color:#444;text-align:center;max-width:260px;line-height:1.6;font-family:system-ui,sans-serif;">
-      Not sure? Start the camera and use the <b style="color:#666">Calibrate</b> button to measure VFOV live.
-    </p>
-
-    <button id="start-btn">Start Camera</button>
   </div>
 
-  <!-- Camera feed -->
+  <button class="btn-green" id="btn-start">Start Camera</button>
+
+  <div class="divider">or</div>
+
+  <button class="btn-outline" id="btn-cal">Calibrate VFOV →</button>
+</div>
+
+<!-- Screen 2: Calibration -->
+<div class="screen" id="screen-cal">
+  <div class="logo">Fieldview</div>
+  <div class="screen-title">Calibrate</div>
+  <p class="screen-sub">
+    Stand at a known distance from a ruler.<br>
+    Frame so the ruler fills the full height of the screen — bottom of ruler at bottom of frame, top at top.
+  </p>
+  <p class="screen-sub" style="color:#2a4a2a;font-size:11px;">
+    VFOV = atan( ruler height / distance )
+  </p>
+
+  <div class="input-row-2">
+    <div class="input-col">
+      <label>Ruler height</label>
+      <div class="big-input-row">
+        <input type="number" id="cal-ruler" min="1" max="9999" value="100" />
+        <span class="big-unit">cm</span>
+      </div>
+    </div>
+    <div class="input-col">
+      <label>Distance</label>
+      <div class="big-input-row">
+        <input type="number" id="cal-dist" min="1" max="99999" value="100" />
+        <span class="big-unit">cm</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-box" id="cal-result">
+    <div class="result-label">Computed VFOV</div>
+    <div><span class="result-val" id="cal-result-val">—</span><span class="result-unit"> °</span></div>
+    <div class="result-formula" id="cal-formula"></div>
+  </div>
+
+  <button class="btn-green" id="btn-use-cal" style="display:none;">Use this VFOV</button>
+  <button class="btn-outline" id="btn-cal-back">← Back</button>
+</div>
+
+<!-- Screen 3: Camera -->
+<div class="screen" id="screen-cam">
   <video id="video" autoplay playsinline muted></video>
   <canvas id="overlay-canvas"></canvas>
-  <canvas id="comp-canvas"></canvas>
-
-  <!-- Calibration overlay — shown on top of live camera -->
-  <div id="cal-overlay">
-    <div id="cal-close-btn">✕</div>
-    <div class="cal-panel">
-      <div class="cal-title">Calibrate VFOV</div>
-      <p class="cal-desc">
-        Point the bottom of frame at the base of a ruler.<br>
-        Enter the ruler length visible in frame and your distance to it.
-      </p>
-      <p class="cal-desc" style="color:#fc0;font-size:10px;">
-        VFOV = atan(ruler height / distance)
-      </p>
-
-      <div class="cal-inputs">
-        <div class="cal-input-group">
-          <span class="cal-input-label">Ruler height</span>
-          <div class="cal-input-row">
-            <input type="number" id="cal-ruler" min="1" max="9999" value="100" />
-            <span class="cal-input-unit">cm</span>
-          </div>
-        </div>
-        <div class="cal-input-group">
-          <span class="cal-input-label">Distance</span>
-          <div class="cal-input-row">
-            <input type="number" id="cal-dist" min="1" max="99999" value="100" />
-            <span class="cal-input-unit">cm</span>
-          </div>
-        </div>
-      </div>
-
-      <div id="cal-result-bar">
-        <div>
-          <div class="cal-res-label">VFOV</div>
-          <div class="cal-res-val" id="cal-res-val">—</div>
-        </div>
-        <button id="apply-cal-btn">Apply ✓</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Recording indicator -->
-  <div id="rec-indicator">
-    <div class="rec-dot"></div>
-    <span id="rec-dur">00:00</span>
-  </div>
-
-  <!-- Live FOV display -->
-  <div id="fov-live-wrap">
-    <span class="live-label">VFOV °</span>
-    <input type="number" id="fov-live-input" min="5" max="180" value="49" />
-  </div>
-
-  <!-- Bottom HUD -->
-  <div id="hud">
-    <div class="hud-side">
-      <div class="hud-fov-val" id="hud-fov">49°</div>
-      <div class="hud-label">VERT FOV</div>
-    </div>
-    <div>
-      <button id="cal-hud-btn">Calibrate</button>
-    </div>
-    <div class="hud-side" style="display:flex;justify-content:flex-end;">
-      <div id="close-btn">✕</div>
-    </div>
-  </div>
-
-  <div id="rec-btn"><div class="inner"></div></div>
-  <div id="toast"></div>
-  <div id="err-msg"></div>
+  <button id="cam-back">← Back</button>
+  <div id="cam-fov-label"></div>
 </div>
 
 <script>
-const startScreen  = document.getElementById('start-screen');
-const video        = document.getElementById('video');
-const canvas       = document.getElementById('overlay-canvas');
-const ctx          = canvas.getContext('2d');
-const compCanvas   = document.getElementById('comp-canvas');
-const compCtx      = compCanvas.getContext('2d');
-const fovInput     = document.getElementById('fov-input');
-const fovLiveInput = document.getElementById('fov-live-input');
-const hud          = document.getElementById('hud');
-const hudFov       = document.getElementById('hud-fov');
-const closeBtn     = document.getElementById('close-btn');
-const fovLiveWrap  = document.getElementById('fov-live-wrap');
-const errMsg       = document.getElementById('err-msg');
-const recBtn       = document.getElementById('rec-btn');
-const recIndicator = document.getElementById('rec-indicator');
-const recDur       = document.getElementById('rec-dur');
-const toast        = document.getElementById('toast');
-
-const calOverlay   = document.getElementById('cal-overlay');
-const calHudBtn    = document.getElementById('cal-hud-btn');
-const calCloseBtn  = document.getElementById('cal-close-btn');
-const livePitchVal = document.getElementById('live-pitch-val');
-const markTopBtn   = document.getElementById('mark-top-btn');
-const markBotBtn   = document.getElementById('mark-bot-btn');
-const markTopVal   = document.getElementById('mark-top-val');
-const markBotVal   = document.getElementById('mark-bot-val');
-const calResultBar = document.getElementById('cal-result-bar');
-const calResVal    = document.getElementById('cal-res-val');
-const applyCalBtn  = document.getElementById('apply-cal-btn');
-const calPermErr   = document.getElementById('cal-perm-err');
-
-let fov = 49;
-let running = false;
-let animId;
-let mediaRecorder = null;
-let recordedChunks = [];
-let recStartTime = null;
-let recTimerInterval = null;
-let isRecording = false;
-
-// ── Trig calibration ─────────────────────────────────────────
-const calOverlay  = document.getElementById('cal-overlay');
-const calHudBtn   = document.getElementById('cal-hud-btn');
-const calCloseBtn = document.getElementById('cal-close-btn');
-const calRuler    = document.getElementById('cal-ruler');
-const calDist     = document.getElementById('cal-dist');
-const calResultBar = document.getElementById('cal-result-bar');
-const calResVal   = document.getElementById('cal-res-val');
-const applyCalBtn = document.getElementById('apply-cal-btn');
-
-function computeVFOV() {
-  const h = parseFloat(calRuler.value);
-  const d = parseFloat(calDist.value);
-  if (!h || !d || d <= 0) { calResultBar.classList.remove('visible'); return; }
-  const vfovRad = Math.atan(h / d);
-  const vfovDeg = vfovRad * (180 / Math.PI);
-  calResVal.textContent = vfovDeg.toFixed(1) + '°';
-  calResultBar.classList.add('visible');
-  applyCalBtn._vfov = vfovDeg;
+// ── screen navigation ──────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
 }
 
-calRuler.addEventListener('input', computeVFOV);
-calDist.addEventListener('input', computeVFOV);
+let fov = 66;
+let animId;
+const video  = document.getElementById('video');
+const canvas = document.getElementById('overlay-canvas');
+const ctx    = canvas.getContext('2d');
 
-calHudBtn.addEventListener('click', () => {
-  computeVFOV();
-  calOverlay.classList.add('active');
+// ── screen 1 ──────────────────────────────────────────────
+document.getElementById('btn-cal').addEventListener('click', () => {
+  computeCal();
+  show('screen-cal');
 });
 
-calCloseBtn.addEventListener('click', () => {
-  calOverlay.classList.remove('active');
+document.getElementById('btn-start').addEventListener('click', () => {
+  fov = parseFloat(document.getElementById('fov-val').value) || 66;
+  startCamera();
 });
 
-applyCalBtn.addEventListener('click', () => {
-  const v = applyCalBtn._vfov;
-  if (!v) return;
-  fov = Math.max(5, Math.min(180, Math.round(v * 10) / 10));
-  fovInput.value = fov;
-  fovLiveInput.value = fov;
-  hudFov.textContent = fov + '°';
-  calOverlay.classList.remove('active');
-  showToast('VFOV set to ' + fov + '°');
+// ── screen 2: calibration ─────────────────────────────────
+const calRuler   = document.getElementById('cal-ruler');
+const calDist    = document.getElementById('cal-dist');
+const calResult  = document.getElementById('cal-result');
+const calResVal  = document.getElementById('cal-result-val');
+const calFormula = document.getElementById('cal-formula');
+const btnUseCal  = document.getElementById('btn-use-cal');
+
+let computedVfov = null;
+
+function computeCal() {
+  const h = parseFloat(calRuler.value);
+  const d = parseFloat(calDist.value);
+  if (!h || !d || d <= 0 || h <= 0) {
+    calResult.classList.remove('visible');
+    btnUseCal.style.display = 'none';
+    return;
+  }
+  computedVfov = Math.atan(h / d) * (180 / Math.PI);
+  calResVal.textContent = computedVfov.toFixed(1);
+  calFormula.textContent = 'atan(' + h + ' / ' + d + ') = ' + computedVfov.toFixed(2) + '°';
+  calResult.classList.add('visible');
+  btnUseCal.style.display = 'block';
+}
+
+calRuler.addEventListener('input', computeCal);
+calDist.addEventListener('input',  computeCal);
+
+document.getElementById('btn-use-cal').addEventListener('click', () => {
+  if (!computedVfov) return;
+  fov = Math.round(computedVfov * 10) / 10;
+  document.getElementById('fov-val').value = fov;
+  show('screen-home');
 });
 
-// ── Manual FOV ───────────────────────────────────────────────
-document.getElementById('fov-up').addEventListener('click', () => {
-  fovInput.value = Math.min(180, parseInt(fovInput.value || 49) + 1);
-  fov = parseInt(fovInput.value);
-});
-document.getElementById('fov-dn').addEventListener('click', () => {
-  fovInput.value = Math.max(5, parseInt(fovInput.value || 49) - 1);
-  fov = parseInt(fovInput.value);
-});
-fovInput.addEventListener('input', () => { fov = Math.max(5, Math.min(180, parseInt(fovInput.value) || 49)); });
+document.getElementById('btn-cal-back').addEventListener('click', () => show('screen-home'));
 
-document.querySelectorAll('.preset-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const v = parseInt(btn.dataset.fov);
-    fovInput.value = v; fov = v;
-    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  });
-});
-
-fovLiveInput.addEventListener('input', () => {
-  fov = Math.max(5, Math.min(180, parseInt(fovLiveInput.value) || 49));
-  hudFov.textContent = fov + '°';
-});
-
-// ── Camera ───────────────────────────────────────────────────
-document.getElementById('start-btn').addEventListener('click', startCamera);
-
-closeBtn.addEventListener('click', () => {
-  if (isRecording) stopRecording();
-  calOverlay.classList.remove('active');
-  running = false;
-  cancelAnimationFrame(animId);
-  if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
-  hud.style.display = 'none';
-  recBtn.style.display = 'none';
-  fovLiveWrap.style.display = 'none';
-  recIndicator.style.display = 'none';
-  startScreen.style.display = 'flex';
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-});
-
-recBtn.addEventListener('click', () => {
-  if (!isRecording) startRecording(); else stopRecording();
-});
-
+// ── screen 3: camera ──────────────────────────────────────
 async function startCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -452,159 +238,99 @@ async function startCamera() {
     });
     video.srcObject = stream;
     await video.play();
-    startScreen.style.display = 'none';
-    hud.style.display = 'flex';
-    recBtn.style.display = 'flex';
-    fovLiveWrap.style.display = 'flex';
-    fovLiveInput.value = fov;
-    hudFov.textContent = fov + '°';
-    running = true;
-    resize(); draw();
-  } catch (e) {
-    errMsg.style.display = 'block';
-    errMsg.innerHTML = '⚠️ Camera access blocked.<br><br>This page must be served over HTTPS.<br>Upload to <b>GitHub Pages</b>.';
+    show('screen-cam');
+    document.getElementById('cam-fov-label').textContent = 'VFOV ' + fov + '°';
+    resize();
+    cancelAnimationFrame(animId);
+    draw();
+  } catch(e) {
+    alert('Camera blocked. Serve over HTTPS (GitHub Pages).');
   }
 }
 
-// ── Recording ────────────────────────────────────────────────
-function startRecording() {
-  recordedChunks = [];
-  const stream = compCanvas.captureStream(30);
-  const mimeTypes = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'];
-  const mimeType = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || '';
-  try { mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {}); }
-  catch(e) { mediaRecorder = new MediaRecorder(stream); }
-  mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
-  mediaRecorder.onstop = saveVideo;
-  mediaRecorder.start(100);
-  isRecording = true;
-  recBtn.classList.add('recording');
-  recIndicator.style.display = 'flex';
-  recStartTime = Date.now();
-  recTimerInterval = setInterval(updateRecTimer, 500);
-}
+document.getElementById('cam-back').addEventListener('click', () => {
+  cancelAnimationFrame(animId);
+  if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+  show('screen-home');
+});
 
-function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-  isRecording = false;
-  recBtn.classList.remove('recording');
-  recIndicator.style.display = 'none';
-  clearInterval(recTimerInterval);
-  recDur.textContent = '00:00';
-}
-
-function updateRecTimer() {
-  const elapsed = Math.floor((Date.now() - recStartTime) / 1000);
-  const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
-  const s = String(elapsed % 60).padStart(2, '0');
-  recDur.textContent = m + ':' + s;
-}
-
-function saveVideo() {
-  if (recordedChunks.length === 0) return;
-  const mimeType = mediaRecorder.mimeType || 'video/webm';
-  const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
-  const blob = new Blob(recordedChunks, { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'fov-overlay-' + Date.now() + '.' + ext; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
-  showToast('Video saved (' + ext.toUpperCase() + ')');
-}
-
-function showToast(msg) {
-  toast.textContent = msg;
-  toast.style.display = 'block';
-  setTimeout(() => { toast.style.display = 'none'; }, 3000);
-}
-
-// ── Canvas ───────────────────────────────────────────────────
+// ── canvas ────────────────────────────────────────────────
 function resize() {
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = canvas.offsetWidth * dpr;
+  canvas.width  = canvas.offsetWidth  * dpr;
   canvas.height = canvas.offsetHeight * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  compCanvas.width = canvas.offsetWidth;
-  compCanvas.height = canvas.offsetHeight;
 }
-window.addEventListener('resize', () => { if (running) resize(); });
+window.addEventListener('resize', () => { if (document.getElementById('screen-cam').classList.contains('active')) resize(); });
 
 function draw() {
-  if (!running) return;
-  const dpr = window.devicePixelRatio || 1;
-  const cssW = canvas.offsetWidth, cssH = canvas.offsetHeight;
-  if (canvas.width !== cssW * dpr || canvas.height !== cssH * dpr) resize();
-  ctx.clearRect(0, 0, cssW, cssH);
-  drawOverlay(ctx, cssW, cssH);
-  if (isRecording) {
-    compCtx.drawImage(video, 0, 0, compCanvas.width, compCanvas.height);
-    drawOverlay(compCtx, compCanvas.width, compCanvas.height);
-  }
-  animId = requestAnimationFrame(draw);
-}
+  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+  ctx.clearRect(0, 0, W, H);
 
-function drawOverlay(c, W, H) {
-  const cy = H / 2;
+  const cy      = H / 2;
   const halfFov = fov / 2;
   const pxPerDeg = H / fov;
-  const axisX = W * 0.42;
-  c.save();
+  const axisX   = W * 0.5;
 
-  c.strokeStyle = 'rgba(0,255,0,0.3)';
-  c.lineWidth = 1; c.setLineDash([4,8]);
-  c.beginPath(); c.moveTo(axisX,0); c.lineTo(axisX,H); c.stroke();
-  c.setLineDash([]);
+  ctx.save();
 
+  // dashed axis
+  ctx.strokeStyle = 'rgba(0,255,0,0.25)'; ctx.lineWidth = 1; ctx.setLineDash([4,8]);
+  ctx.beginPath(); ctx.moveTo(axisX, 0); ctx.lineTo(axisX, H); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ticks
   for (let d = -Math.ceil(halfFov); d <= Math.ceil(halfFov); d++) {
     const y = cy - d * pxPerDeg;
     if (y < -2 || y > H + 2) continue;
     const isMajor = d % 10 === 0, isMid = d % 5 === 0;
-    let tickW, strokeW, alpha;
-    if (isMajor)    { tickW=34; strokeW=1.5; alpha=0.95; }
-    else if (isMid) { tickW=20; strokeW=1.0; alpha=0.65; }
-    else            { tickW=11; strokeW=0.7; alpha=0.38; }
-    c.strokeStyle = `rgba(0,255,0,${alpha})`; c.lineWidth = strokeW;
-    c.beginPath(); c.moveTo(axisX-tickW/2,y); c.lineTo(axisX+tickW/2,y); c.stroke();
+    let tw, sw, alpha;
+    if (isMajor)    { tw=36; sw=1.5; alpha=0.95; }
+    else if (isMid) { tw=22; sw=1.0; alpha=0.6;  }
+    else            { tw=12; sw=0.7; alpha=0.35; }
+    ctx.strokeStyle = `rgba(0,255,0,${alpha})`; ctx.lineWidth = sw;
+    ctx.beginPath(); ctx.moveTo(axisX-tw/2, y); ctx.lineTo(axisX+tw/2, y); ctx.stroke();
     if (isMajor) {
-      const label = d+'°';
-      c.font = '700 11px "Courier New",monospace';
-      c.textAlign='left'; c.textBaseline='middle';
-      const tw = c.measureText(label).width;
-      c.fillStyle='rgba(0,0,0,0.45)'; c.fillRect(axisX+22,y-8,tw+6,16);
-      c.fillStyle='#00ff00'; c.globalAlpha=0.9; c.fillText(label,axisX+24,y); c.globalAlpha=1;
+      const lbl = d + '°';
+      ctx.font = '700 12px "Courier New",monospace';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      const lw = ctx.measureText(lbl).width;
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(axisX+22, y-9, lw+8, 18);
+      ctx.fillStyle = '#00ff00'; ctx.globalAlpha = 0.9;
+      ctx.fillText(lbl, axisX+25, y); ctx.globalAlpha = 1;
     }
   }
 
-  c.strokeStyle='rgba(0,255,0,0.7)'; c.lineWidth=1.2;
-  c.beginPath();
-  c.moveTo(axisX-18,cy); c.lineTo(axisX-5,cy);
-  c.moveTo(axisX+5,cy);  c.lineTo(axisX+18,cy);
-  c.moveTo(axisX,cy-18); c.lineTo(axisX,cy-5);
-  c.moveTo(axisX,cy+5);  c.lineTo(axisX,cy+18);
-  c.stroke();
-  c.strokeStyle='#00ff00'; c.lineWidth=1.5; c.strokeRect(axisX-5,cy-5,10,10);
+  // crosshair
+  ctx.strokeStyle = 'rgba(0,255,0,0.7)'; ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(axisX-20,cy); ctx.lineTo(axisX-6,cy);
+  ctx.moveTo(axisX+6, cy); ctx.lineTo(axisX+20,cy);
+  ctx.moveTo(axisX,cy-20); ctx.lineTo(axisX,cy-6);
+  ctx.moveTo(axisX,cy+6);  ctx.lineTo(axisX,cy+20);
+  ctx.stroke();
+  ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 1.5;
+  ctx.strokeRect(axisX-5, cy-5, 10, 10);
 
-  [-1,1].forEach(side => {
-    const ey = cy - side*halfFov*pxPerDeg;
-    if (ey<0||ey>H) return;
-    c.strokeStyle='rgba(0,255,0,0.55)'; c.lineWidth=1;
-    c.beginPath(); c.moveTo(axisX-26,ey); c.lineTo(axisX+26,ey); c.stroke();
-    const label=(side>0?'+':'-')+halfFov.toFixed(1)+'°';
-    c.font='700 9px "Courier New",monospace'; c.textAlign='left'; c.textBaseline='middle';
-    const tw=c.measureText(label).width;
-    c.fillStyle='rgba(0,0,0,0.5)'; c.fillRect(axisX+30,ey-8,tw+6,16);
-    c.fillStyle='#00cc00'; c.fillText(label,axisX+32,ey);
+  // top / bottom edge lines
+  [-1, 1].forEach(s => {
+    const ey = cy - s * halfFov * pxPerDeg;
+    if (ey < 0 || ey > H) return;
+    ctx.strokeStyle = 'rgba(0,255,0,0.5)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, ey); ctx.lineTo(W, ey); ctx.stroke();
+    const lbl = (s > 0 ? '+' : '') + (s * halfFov).toFixed(1) + '°';
+    ctx.font = '700 10px "Courier New",monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = s > 0 ? 'bottom' : 'top';
+    const lw = ctx.measureText(lbl).width;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(axisX - lw/2 - 4, s > 0 ? ey-17 : ey+1, lw+8, 15);
+    ctx.fillStyle = '#00cc00';
+    ctx.fillText(lbl, axisX, s > 0 ? ey-3 : ey+3);
   });
 
-  c.strokeStyle='rgba(0,255,0,0.18)'; c.lineWidth=0.8;
-  c.beginPath(); c.moveTo(0,cy); c.lineTo(W,cy); c.stroke();
-
-  const now = new Date().toLocaleTimeString();
-  c.font='600 10px "Courier New",monospace'; c.textAlign='left'; c.textBaseline='top';
-  c.fillStyle='rgba(0,0,0,0.4)'; c.fillRect(12,14,126,32);
-  c.fillStyle='#00ff00'; c.globalAlpha=0.55;
-  c.fillText('FIELDVIEW',16,18); c.fillText(now,16,31); c.globalAlpha=1;
-  c.restore();
+  ctx.restore();
+  animId = requestAnimationFrame(draw);
 }
 </script>
 </body>
