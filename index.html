@@ -15,57 +15,72 @@
   #overlay-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   #comp-canvas { display: none; }
 
+  /* ── Start screen ── */
   #start-screen {
     position: absolute; inset: 0; background: #000;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 18px; z-index: 10; padding: 28px 32px; overflow-y: auto;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    gap: 16px; z-index: 10; padding: 40px 28px 32px; overflow-y: auto;
   }
-
-  .logo { font-size: 11px; letter-spacing: 4px; color: #888; text-transform: uppercase; }
-  h1 { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: -0.5px; text-align: center; line-height: 1.2; }
+  .logo { font-size: 11px; letter-spacing: 4px; color: #555; text-transform: uppercase; }
+  h1 { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: -0.5px; text-align: center; line-height: 1.2; margin-bottom: 4px; }
 
   .section-title {
-    font-size: 10px; letter-spacing: 3px; color: #444; text-transform: uppercase;
-    width: 100%; max-width: 280px; padding-bottom: 6px;
-    border-bottom: 1px solid #1a1a1a;
+    font-size: 10px; letter-spacing: 3px; color: #333; text-transform: uppercase;
+    width: 100%; max-width: 300px; padding-bottom: 8px; border-bottom: 1px solid #1a1a1a;
   }
 
-  /* EXIF reader */
-  #exif-btn {
-    width: 100%; max-width: 280px;
-    background: #111; border: 1px dashed #2a2a2a; border-radius: 8px;
-    color: #555; font-family: 'Courier New', monospace; font-size: 12px;
-    letter-spacing: 1px; padding: 14px; cursor: pointer; text-align: center;
-    line-height: 1.5; -webkit-tap-highlight-color: transparent; transition: border-color 0.2s;
+  /* ── Calibration tool ── */
+  #cal-box {
+    width: 100%; max-width: 300px;
+    background: #080808; border: 1px solid #1e1e1e; border-radius: 10px;
+    padding: 14px; display: flex; flex-direction: column; gap: 12px;
   }
-  #exif-btn:active { border-color: #0f0; color: #0a0; }
-  #exif-file { display: none; }
-
-  #exif-result {
-    width: 100%; max-width: 280px;
-    background: #0a1a0a; border: 1px solid #1a3a1a; border-radius: 8px;
-    padding: 12px 14px; display: none; gap: 10px; flex-direction: column;
+  .cal-instruction {
+    font-size: 11px; color: #555; line-height: 1.6; font-family: system-ui, sans-serif;
+    text-align: center;
   }
-  .exif-row { display: flex; justify-content: space-between; align-items: baseline; }
-  .exif-key { font-size: 10px; color: #4a6a4a; letter-spacing: 2px; text-transform: uppercase; }
-  .exif-val { font-size: 14px; color: #0f0; font-weight: 700; }
-  #exif-vfov-computed { font-size: 18px; color: #0f0; font-weight: 700; }
 
-  #use-exif-btn {
+  .cal-pitch-display {
+    text-align: center;
+  }
+  .cal-pitch-label { font-size: 9px; color: #333; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 4px; }
+  .cal-pitch-val { font-size: 32px; font-weight: 700; color: #0f0; letter-spacing: -1px; }
+  .cal-pitch-unit { font-size: 13px; color: #0a0; }
+
+  .cal-marks { display: flex; gap: 8px; }
+  .cal-mark-btn {
+    flex: 1; background: #111; border: 1px solid #222; border-radius: 8px;
+    color: #666; font-family: 'Courier New', monospace; font-size: 10px;
+    letter-spacing: 1px; text-transform: uppercase; padding: 10px 6px;
+    cursor: pointer; text-align: center; line-height: 1.5;
+    -webkit-tap-highlight-color: transparent; transition: border-color 0.15s;
+  }
+  .cal-mark-btn.set { border-color: #0f0; color: #0f0; background: #0a1a0a; }
+  .cal-mark-btn:active { background: #0a2a0a; }
+  .cal-mark-val { font-size: 13px; font-weight: 700; display: block; margin-top: 2px; }
+
+  #cal-result {
+    display: none; background: #0a1a0a; border: 1px solid #1a3a1a;
+    border-radius: 8px; padding: 12px; text-align: center;
+  }
+  .cal-result-label { font-size: 9px; color: #4a6a4a; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 4px; }
+  .cal-result-val { font-size: 26px; font-weight: 700; color: #0f0; }
+
+  #use-cal-btn {
     width: 100%; background: #0a2a0a; border: 1px solid #0f0; border-radius: 6px;
     color: #0f0; font-family: 'Courier New', monospace; font-size: 11px;
     letter-spacing: 2px; text-transform: uppercase; padding: 10px;
-    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    cursor: pointer; -webkit-tap-highlight-color: transparent; display: none;
   }
-  #use-exif-btn:active { background: #0f0; color: #000; }
+  #use-cal-btn:active { background: #0f0; color: #000; }
 
-  #exif-err {
-    width: 100%; max-width: 280px; font-size: 11px; color: #f66;
-    text-align: center; display: none; line-height: 1.6; font-family: system-ui, sans-serif;
+  #cal-permission-err {
+    font-size: 11px; color: #f66; text-align: center; display: none;
+    line-height: 1.6; font-family: system-ui, sans-serif;
   }
 
-  /* Manual FOV */
-  .fov-input-wrap { width: 100%; max-width: 280px; }
+  /* ── Manual FOV ── */
+  .fov-input-wrap { width: 100%; max-width: 300px; }
   .fov-label { font-size: 10px; letter-spacing: 3px; color: #555; text-transform: uppercase; margin-bottom: 10px; display: block; }
   .fov-row { display: flex; align-items: center; gap: 10px; background: #111; border: 1px solid #222; border-radius: 8px; padding: 10px 14px; }
   .fov-row input[type=number] {
@@ -85,7 +100,7 @@
   }
   .fov-stepper button:active { background: #222; color: #0f0; }
 
-  #presets { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 280px; }
+  #presets { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 300px; }
   .preset-btn {
     background: transparent; border: 1px solid #2a2a2a; border-radius: 20px;
     color: #555; font-size: 10px; letter-spacing: 1px; padding: 6px 13px;
@@ -97,12 +112,12 @@
   #start-btn {
     background: #0f0; color: #000; border: none; border-radius: 8px;
     font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
-    padding: 16px 40px; cursor: pointer; font-family: 'Courier New', monospace;
-    -webkit-tap-highlight-color: transparent; width: 100%; max-width: 280px;
+    padding: 16px; cursor: pointer; font-family: 'Courier New', monospace;
+    -webkit-tap-highlight-color: transparent; width: 100%; max-width: 300px;
   }
   #start-btn:active { opacity: 0.7; }
 
-  /* Camera UI */
+  /* ── Camera UI ── */
   #hud {
     position: absolute; bottom: 0; left: 0; right: 0;
     padding: 16px 24px; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
@@ -175,31 +190,35 @@
     <div class="logo">Fieldview</div>
     <h1>FOV Overlay</h1>
 
-    <span class="section-title">Auto — read from photo</span>
+    <span class="section-title">Calibrate with pitch sensor</span>
 
-    <button id="exif-btn">
-      📷 Tap to pick a photo<br>
-      <span style="font-size:10px;color:#444;">VFOV is computed from its EXIF focal length</span>
-    </button>
-    <input type="file" id="exif-file" accept="image/*" />
+    <div id="cal-box">
+      <p class="cal-instruction">Hold phone upright. Aim at the <b style="color:#0a0">top edge</b> of a target, mark it. Then aim at the <b style="color:#0a0">bottom edge</b> and mark it.</p>
 
-    <div id="exif-result">
-      <div class="exif-row">
-        <span class="exif-key">Focal length</span>
-        <span class="exif-val" id="exif-fl">—</span>
+      <div class="cal-pitch-display">
+        <div class="cal-pitch-label">Current pitch</div>
+        <div><span class="cal-pitch-val" id="cal-pitch-val">—</span><span class="cal-pitch-unit"> °</span></div>
       </div>
-      <div class="exif-row">
-        <span class="exif-key">Aspect ratio</span>
-        <span class="exif-val" id="exif-ar">—</span>
+
+      <div class="cal-marks">
+        <button class="cal-mark-btn" id="mark-top-btn">
+          Top edge<br>
+          <span class="cal-mark-val" id="mark-top-val">—</span>
+        </button>
+        <button class="cal-mark-btn" id="mark-bot-btn">
+          Bottom edge<br>
+          <span class="cal-mark-val" id="mark-bot-val">—</span>
+        </button>
       </div>
-      <div class="exif-row">
-        <span class="exif-key">Computed VFOV</span>
-        <span id="exif-vfov-computed">—</span>
+
+      <div id="cal-result">
+        <div class="cal-result-label">Measured VFOV</div>
+        <div class="cal-result-val" id="cal-result-val">—</div>
       </div>
-      <button id="use-exif-btn">Use this VFOV ↓</button>
+
+      <button id="use-cal-btn">Use this VFOV ↓</button>
+      <div id="cal-permission-err">Motion sensor access denied.<br>On iPhone: Settings → Safari → Motion & Orientation Access → On</div>
     </div>
-
-    <div id="exif-err"></div>
 
     <span class="section-title">Manual</span>
 
@@ -218,6 +237,7 @@
     <div id="presets">
       <button class="preset-btn" data-fov="46">iPhone (1×)</button>
       <button class="preset-btn" data-fov="72">iPhone (UW)</button>
+      <button class="preset-btn" data-fov="66">Calibrated</button>
       <button class="preset-btn" data-fov="73">GoPro 12</button>
       <button class="preset-btn" data-fov="49">DJI Mini 3</button>
     </div>
@@ -254,30 +274,24 @@
   <div id="err-msg"></div>
 </div>
 
-<!-- exifr: lightweight EXIF reader, works in Safari -->
-<script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script>
-const startScreen = document.getElementById('start-screen');
-const video = document.getElementById('video');
-const canvas = document.getElementById('overlay-canvas');
-const ctx = canvas.getContext('2d');
-const compCanvas = document.getElementById('comp-canvas');
-const compCtx = compCanvas.getContext('2d');
-const fovInput = document.getElementById('fov-input');
+const startScreen  = document.getElementById('start-screen');
+const video        = document.getElementById('video');
+const canvas       = document.getElementById('overlay-canvas');
+const ctx          = canvas.getContext('2d');
+const compCanvas   = document.getElementById('comp-canvas');
+const compCtx      = compCanvas.getContext('2d');
+const fovInput     = document.getElementById('fov-input');
 const fovLiveInput = document.getElementById('fov-live-input');
-const hud = document.getElementById('hud');
-const hudFov = document.getElementById('hud-fov');
-const closeBtn = document.getElementById('close-btn');
-const fovLiveWrap = document.getElementById('fov-live-wrap');
-const errMsg = document.getElementById('err-msg');
-const recBtn = document.getElementById('rec-btn');
+const hud          = document.getElementById('hud');
+const hudFov       = document.getElementById('hud-fov');
+const closeBtn     = document.getElementById('close-btn');
+const fovLiveWrap  = document.getElementById('fov-live-wrap');
+const errMsg       = document.getElementById('err-msg');
+const recBtn       = document.getElementById('rec-btn');
 const recIndicator = document.getElementById('rec-indicator');
-const recDur = document.getElementById('rec-dur');
-const toast = document.getElementById('toast');
-const exifBtn = document.getElementById('exif-btn');
-const exifFile = document.getElementById('exif-file');
-const exifResult = document.getElementById('exif-result');
-const exifErr = document.getElementById('exif-err');
+const recDur       = document.getElementById('rec-dur');
+const toast        = document.getElementById('toast');
 
 let fov = 49;
 let running = false;
@@ -287,98 +301,89 @@ let recordedChunks = [];
 let recStartTime = null;
 let recTimerInterval = null;
 let isRecording = false;
-let computedVfov = null;
 
-// 35mm full-frame sensor: 36mm wide × 24mm tall
-// FocalLengthIn35mmFormat is the 35mm-equivalent FL — works for ANY camera
-// because the crop factor is already baked in.
-// For non-4:3 aspect ratios, the sensor height is proportionally cropped.
-const SENSOR_35MM_W = 36;
-const SENSOR_35MM_H = 24;
+// ── Pitch-sensor calibration ─────────────────────────────────
+let currentPitch = null;
+let markTop = null;
+let markBot = null;
+let sensorRunning = false;
 
-function sensorHeightForRatio(wPx, hPx) {
-  if (!wPx || !hPx) return SENSOR_35MM_H; // default full 4:3
-  const ratio = wPx / hPx; // image aspect ratio
-  // Full-frame 4:3 equivalent is 36×27, but 35mm standard is 36×24 (3:2).
-  // We derive the effective sensor height by scaling from the 35mm width:
-  // effective_h = SENSOR_35MM_W / ratio
-  // but cap at full-frame height (24mm) so landscape crops don't exceed sensor.
-  return Math.min(SENSOR_35MM_W / ratio, SENSOR_35MM_H);
+const calPitchVal  = document.getElementById('cal-pitch-val');
+const markTopBtn   = document.getElementById('mark-top-btn');
+const markBotBtn   = document.getElementById('mark-bot-btn');
+const markTopVal   = document.getElementById('mark-top-val');
+const markBotVal   = document.getElementById('mark-bot-val');
+const calResult    = document.getElementById('cal-result');
+const calResultVal = document.getElementById('cal-result-val');
+const useCalBtn    = document.getElementById('use-cal-btn');
+const calPermErr   = document.getElementById('cal-permission-err');
+
+function onDeviceOrientation(e) {
+  // beta = pitch: -180 to 180, 0 = flat, 90 = upright portrait
+  if (e.beta === null) return;
+  currentPitch = e.beta;
+  calPitchVal.textContent = currentPitch.toFixed(1);
 }
 
-// ── EXIF reader ──────────────────────────────────────────────
-exifBtn.addEventListener('click', () => exifFile.click());
-
-exifFile.addEventListener('change', async () => {
-  const file = exifFile.files[0];
-  if (!file) return;
-
-  exifErr.style.display = 'none';
-  exifResult.style.display = 'none';
-
-  try {
-    const exif = await exifr.parse(file);
-
-    if (!exif) throw new Error('No EXIF data found.\nMake sure it is a photo taken with a camera, not a screenshot.');
-
-    const fl35 = exif.FocalLengthIn35mmFormat;
-    const fl    = exif.FocalLength;
-
-    if (!fl35 && !fl) throw new Error('No focal length found in this photo.\nMake sure it was taken with a camera app, not a screenshot.');
-
-    const w = exif.PixelXDimension || exif.ExifImageWidth || 0;
-    const h = exif.PixelYDimension || exif.ExifImageHeight || 0;
-
-    // Aspect ratio label
-    let arLabel = '—';
-    if (w && h) {
-      const r = w / h;
-      if      (Math.abs(r - 4/3)  < 0.05) arLabel = '4:3';
-      else if (Math.abs(r - 16/9) < 0.05) arLabel = '16:9';
-      else if (Math.abs(r - 3/2)  < 0.05) arLabel = '3:2';
-      else if (Math.abs(r - 1)    < 0.05) arLabel = '1:1';
-      else arLabel = w + '×' + h;
-    }
-
-    let vfovDeg;
-    let flLabel;
-
-    if (fl35) {
-      // Best path: 35mm-equivalent FL works for any camera
-      const sensorH = sensorHeightForRatio(w, h);
-      const vfovRad = 2 * Math.atan(sensorH / (2 * fl35));
-      vfovDeg = vfovRad * (180 / Math.PI);
-      flLabel = fl35.toFixed(1) + ' mm (35mm eq.)';
-    } else {
-      // Fallback: actual FL — less accurate without knowing real sensor size,
-      // but still useful as a rough value
-      const sensorH = sensorHeightForRatio(w, h);
-      const vfovRad = 2 * Math.atan(sensorH / (2 * fl));
-      vfovDeg = vfovRad * (180 / Math.PI);
-      flLabel = fl.toFixed(1) + ' mm (actual)';
-    }
-
-    computedVfov = Math.round(vfovDeg * 10) / 10;
-
-    document.getElementById('exif-fl').textContent = flLabel;
-    document.getElementById('exif-ar').textContent = arLabel;
-    document.getElementById('exif-vfov-computed').textContent = computedVfov.toFixed(1) + '°';
-    exifResult.style.display = 'flex';
-
-  } catch(e) {
-    exifErr.textContent = '⚠️ ' + (e.message || 'Could not read EXIF data.');
-    exifErr.style.display = 'block';
+function startSensor() {
+  if (sensorRunning) return;
+  // iOS 13+ requires explicit permission
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+      .then(state => {
+        if (state === 'granted') {
+          window.addEventListener('deviceorientation', onDeviceOrientation);
+          sensorRunning = true;
+          calPermErr.style.display = 'none';
+        } else {
+          calPermErr.style.display = 'block';
+        }
+      })
+      .catch(() => { calPermErr.style.display = 'block'; });
+  } else {
+    // Android / older iOS
+    window.addEventListener('deviceorientation', onDeviceOrientation);
+    sensorRunning = true;
   }
+}
 
-  exifFile.value = '';
+// Request permission on first tap of the calibration box
+document.getElementById('cal-box').addEventListener('click', () => {
+  if (!sensorRunning) startSensor();
+}, { once: false });
+
+function tryComputeVFOV() {
+  if (markTop === null || markBot === null) return;
+  const vfov = Math.abs(markTop - markBot);
+  calResultVal.textContent = vfov.toFixed(1) + '°';
+  calResult.style.display = 'block';
+  useCalBtn.style.display = 'block';
+  useCalBtn._vfov = vfov;
+}
+
+markTopBtn.addEventListener('click', () => {
+  if (currentPitch === null) { startSensor(); return; }
+  markTop = currentPitch;
+  markTopVal.textContent = currentPitch.toFixed(1) + '°';
+  markTopBtn.classList.add('set');
+  tryComputeVFOV();
 });
 
-document.getElementById('use-exif-btn').addEventListener('click', () => {
-  if (computedVfov === null) return;
-  fov = Math.max(5, Math.min(180, Math.round(computedVfov)));
+markBotBtn.addEventListener('click', () => {
+  if (currentPitch === null) { startSensor(); return; }
+  markBot = currentPitch;
+  markBotVal.textContent = currentPitch.toFixed(1) + '°';
+  markBotBtn.classList.add('set');
+  tryComputeVFOV();
+});
+
+useCalBtn.addEventListener('click', () => {
+  const v = useCalBtn._vfov;
+  if (!v) return;
+  fov = Math.max(5, Math.min(180, Math.round(v * 10) / 10));
   fovInput.value = fov;
   document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-  // scroll to start button
   document.getElementById('start-btn').scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
 
@@ -447,7 +452,7 @@ async function startCamera() {
     draw();
   } catch (e) {
     errMsg.style.display = 'block';
-    errMsg.innerHTML = '⚠️ Camera access blocked.<br><br>This page must be served over HTTPS.<br>Upload to <b>tiiny.host</b> or GitHub Pages.';
+    errMsg.innerHTML = '⚠️ Camera access blocked.<br><br>This page must be served over HTTPS.<br>Upload to <b>GitHub Pages</b>.';
   }
 }
 
@@ -543,13 +548,13 @@ function drawOverlay(c, W, H) {
   c.setLineDash([]);
 
   const startDeg = -Math.ceil(halfFov);
-  const endDeg = Math.ceil(halfFov);
+  const endDeg   =  Math.ceil(halfFov);
 
   for (let d = startDeg; d <= endDeg; d++) {
     const y = cy - d * pxPerDeg;
     if (y < -2 || y > H + 2) continue;
     const isMajor = d % 10 === 0;
-    const isMid = d % 5 === 0;
+    const isMid   = d % 5  === 0;
     let tickW, strokeW, alpha;
     if (isMajor)    { tickW = 34; strokeW = 1.5; alpha = 0.95; }
     else if (isMid) { tickW = 20; strokeW = 1.0; alpha = 0.65; }
@@ -577,13 +582,12 @@ function drawOverlay(c, W, H) {
   c.strokeStyle = 'rgba(0,255,0,0.7)'; c.lineWidth = 1.2;
   c.beginPath();
   c.moveTo(axisX - cs, cy); c.lineTo(axisX - 5, cy);
-  c.moveTo(axisX + 5, cy); c.lineTo(axisX + cs, cy);
+  c.moveTo(axisX + 5,  cy); c.lineTo(axisX + cs, cy);
   c.moveTo(axisX, cy - cs); c.lineTo(axisX, cy - 5);
-  c.moveTo(axisX, cy + 5); c.lineTo(axisX, cy + cs);
+  c.moveTo(axisX, cy + 5);  c.lineTo(axisX, cy + cs);
   c.stroke();
-  const cb = 5;
   c.strokeStyle = '#00ff00'; c.lineWidth = 1.5;
-  c.strokeRect(axisX - cb, cy - cb, cb * 2, cb * 2);
+  c.strokeRect(axisX - 5, cy - 5, 10, 10);
 
   [-1, 1].forEach(side => {
     const ey = cy - side * halfFov * pxPerDeg;
@@ -609,7 +613,6 @@ function drawOverlay(c, W, H) {
   c.fillStyle = '#00ff00'; c.globalAlpha = 0.55;
   c.fillText('FIELDVIEW', 16, 18); c.fillText(now, 16, 31);
   c.globalAlpha = 1.0;
-
   c.restore();
 }
 </script>
