@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>FOV Overlay</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
+
+  #app { position: relative; width: 100%; height: 100svh; background: #000; overflow: hidden; }
+
+  #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+  #overlay-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+  /* composite canvas is hidden — used only for recording */
+  #comp-canvas { display: none; }
+
+  #start-screen {
+    position: absolute; inset: 0; background: #000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 20px; z-index: 10; padding: 32px;
+  }
+  .logo { font-size: 11px; letter-spacing: 4px; color: #888; text-transform: uppercase; margin-bottom: 8px; }
+  h1 { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: -0.5px; text-align: center; line-height: 1.2; }
+  .subtitle { font-size: 13px; color: #666; text-align: center; max-width: 260px; line-height: 1.6; font-family: system-ui, sans-serif; }
+
+  .fov-input-wrap { width: 100%; max-width: 280px; }
+  .fov-label { font-size: 10px; letter-spacing: 3px; color: #555; text-transform: uppercase; margin-bottom: 10px; display: block; }
+  .fov-row { display: flex; align-items: center; gap: 10px; background: #111; border: 1px solid #222; border-radius: 8px; padding: 10px 14px; }
+  .fov-row input[type=number] {
+    background: transparent; border: none; outline: none; color: #0f0;
+    font-family: 'Courier New', monospace; font-size: 22px; font-weight: 700;
+    width: 80px; flex: 1; -moz-appearance: textfield;
+  }
+  .fov-row input[type=number]::-webkit-inner-spin-button,
+  .fov-row input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .fov-unit { font-size: 11px; color: #444; letter-spacing: 1px; }
+  .fov-stepper { display: flex; flex-direction: column; gap: 3px; }
+  .fov-stepper button {
+    background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 4px;
+    color: #888; font-size: 11px; width: 32px; height: 26px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .fov-stepper button:active { background: #222; color: #0f0; }
+
+  #start-btn {
+    background: #0f0; color: #000; border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    padding: 16px 40px; cursor: pointer; font-family: 'Courier New', monospace; margin-top: 8px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #start-btn:active { opacity: 0.7; }
+
+  #presets { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 280px; }
+  .preset-btn {
+    background: transparent; border: 1px solid #2a2a2a; border-radius: 20px;
+    color: #555; font-size: 10px; letter-spacing: 1px; padding: 6px 13px;
+    cursor: pointer; font-family: 'Courier New', monospace; white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .preset-btn.active { border-color: #0f0; color: #0f0; }
+
+  /* Bottom HUD */
+  #hud {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 16px 24px; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    display: none; align-items: flex-end; justify-content: space-between; z-index: 5;
+  }
+  .hud-side { width: 64px; flex-shrink: 0; }
+  .hud-fov-val { font-size: 22px; font-weight: 700; color: #0f0; letter-spacing: -1px; line-height: 1; }
+  .hud-label { font-size: 9px; color: #0a0; letter-spacing: 2px; margin-top: 2px; }
+
+  /* Record button */
+  #rec-btn {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 64px; height: 64px; border-radius: 50%;
+    border: 3px solid #fff;
+    background: rgba(0,0,0,0.35);
+    cursor: pointer;
+    display: none;
+    align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 6;
+  }
+  #rec-btn .inner {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #f33; transition: border-radius 0.2s, width 0.2s, height 0.2s;
+  }
+  #rec-btn.recording .inner {
+    border-radius: 6px; width: 26px; height: 26px;
+  }
+
+  /* Rec indicator */
+  #rec-indicator {
+    position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); left: 16px;
+    display: none; align-items: center; gap: 8px; z-index: 5;
+  }
+  .rec-dot {
+    width: 10px; height: 10px; border-radius: 50%; background: #f33;
+    animation: blink 1s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  .rec-time { font-size: 13px; color: #fff; letter-spacing: 1px; }
+  #rec-dur { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: 2px; }
+
+  /* Close button */
+  #close-btn {
+    background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 50%;
+    width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: #888; font-size: 18px; -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+
+  /* Live FOV input */
+  #fov-live-wrap {
+    position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); right: 16px;
+    display: none; flex-direction: column; align-items: flex-end; gap: 4px; z-index: 5;
+  }
+  #fov-live-input {
+    background: rgba(0,0,0,0.6); border: 1px solid #0f0; border-radius: 6px;
+    color: #0f0; font-family: 'Courier New', monospace; font-size: 18px; font-weight: 700;
+    width: 74px; text-align: center; padding: 5px 6px; -moz-appearance: textfield; outline: none;
+  }
+  #fov-live-input::-webkit-inner-spin-button,
+  #fov-live-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .live-label { font-size: 9px; color: #0a0; letter-spacing: 2px; }
+
+  /* Save toast */
+  #toast {
+    position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.85); border: 1px solid #0f0; border-radius: 8px;
+    color: #0f0; font-size: 12px; padding: 10px 20px; letter-spacing: 1px;
+    display: none; white-space: nowrap; z-index: 20; text-align: center; line-height: 1.6;
+  }
+
+  #err-msg {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    color: #f66; font-size: 13px; text-align: center; padding: 20px 24px;
+    letter-spacing: 0.5px; line-height: 1.7; display: none; z-index: 20;
+    background: rgba(0,0,0,0.9); border-radius: 10px; border: 1px solid #f44;
+    max-width: 280px; font-family: system-ui, sans-serif;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="start-screen">
+    <div class="logo">Fieldview</div>
+    <h1>FOV<br>Overlay</h1>
+    <p class="subtitle">Enter your camera's vertical field of view to see live degree markings on video.</p>
+
+    <div class="fov-input-wrap">
+      <span class="fov-label">Vertical FOV</span>
+      <div class="fov-row">
+        <input type="number" id="fov-input" min="5" max="180" value="49" />
+        <span class="fov-unit">DEG</span>
+        <div class="fov-stepper">
+          <button id="fov-up">▲</button>
+          <button id="fov-dn">▼</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="presets">
+      <button class="preset-btn" data-fov="46">iPhone (1×)</button>
+      <button class="preset-btn" data-fov="72">iPhone (UW)</button>
+      <button class="preset-btn" data-fov="13">iPhone (5×)</button>
+      <button class="preset-btn" data-fov="73">GoPro 12</button>
+      <button class="preset-btn" data-fov="49">DJI Mini 3</button>
+      <button class="preset-btn" data-fov="34">Telephoto</button>
+    </div>
+
+    <button id="start-btn">Start Camera</button>
+  </div>
+
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="overlay-canvas"></canvas>
+  <canvas id="comp-canvas"></canvas>
+
+  <div id="rec-indicator">
+    <div class="rec-dot"></div>
+    <span id="rec-dur">00:00</span>
+  </div>
+
+  <div id="fov-live-wrap">
+    <span class="live-label">VFOV °</span>
+    <input type="number" id="fov-live-input" min="5" max="180" value="49" />
+  </div>
+
+  <div id="hud">
+    <div class="hud-side">
+      <div class="hud-fov-val" id="hud-fov">49°</div>
+      <div class="hud-label">VERT FOV</div>
+    </div>
+    <div class="hud-side" style="display:flex;justify-content:flex-end;">
+      <div id="close-btn">✕</div>
+    </div>
+  </div>
+
+  <div id="rec-btn"><div class="inner"></div></div>
+
+  <div id="toast"></div>
+  <div id="err-msg"></div>
+</div>
+
+<script>
+const startScreen = document.getElementById('start-screen');
+const video = document.getElementById('video');
+const canvas = document.getElementById('overlay-canvas');
+const ctx = canvas.getContext('2d');
+const compCanvas = document.getElementById('comp-canvas');
+const compCtx = compCanvas.getContext('2d');
+const fovInput = document.getElementById('fov-input');
+const fovLiveInput = document.getElementById('fov-live-input');
+const hud = document.getElementById('hud');
+const hudFov = document.getElementById('hud-fov');
+const closeBtn = document.getElementById('close-btn');
+const fovLiveWrap = document.getElementById('fov-live-wrap');
+const errMsg = document.getElementById('err-msg');
+const recBtn = document.getElementById('rec-btn');
+const recIndicator = document.getElementById('rec-indicator');
+const recDur = document.getElementById('rec-dur');
+const toast = document.getElementById('toast');
+
+let fov = 49;
+let running = false;
+let animId;
+let mediaRecorder = null;
+let recordedChunks = [];
+let recStartTime = null;
+let recTimerInterval = null;
+let isRecording = false;
+
+// FOV controls
+document.getElementById('fov-up').addEventListener('click', () => {
+  fovInput.value = Math.min(180, parseInt(fovInput.value || 49) + 1);
+  fov = parseInt(fovInput.value);
+});
+document.getElementById('fov-dn').addEventListener('click', () => {
+  fovInput.value = Math.max(5, parseInt(fovInput.value || 49) - 1);
+  fov = parseInt(fovInput.value);
+});
+fovInput.addEventListener('input', () => { fov = Math.max(5, Math.min(180, parseInt(fovInput.value) || 49)); });
+
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const v = parseInt(btn.dataset.fov);
+    fovInput.value = v; fov = v;
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+fovLiveInput.addEventListener('input', () => {
+  fov = Math.max(5, Math.min(180, parseInt(fovLiveInput.value) || 49));
+  hudFov.textContent = fov + '°';
+});
+
+document.getElementById('start-btn').addEventListener('click', startCamera);
+
+closeBtn.addEventListener('click', () => {
+  if (isRecording) stopRecording();
+  running = false;
+  cancelAnimationFrame(animId);
+  if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
+  hud.style.display = 'none';
+  recBtn.style.display = 'none';
+  fovLiveWrap.style.display = 'none';
+  recIndicator.style.display = 'none';
+  startScreen.style.display = 'flex';
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+});
+
+recBtn.addEventListener('click', () => {
+  if (!isRecording) startRecording();
+  else stopRecording();
+});
+
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false
+    });
+    video.srcObject = stream;
+    await video.play();
+    startScreen.style.display = 'none';
+    hud.style.display = 'flex';
+    recBtn.style.display = 'flex';
+    fovLiveWrap.style.display = 'flex';
+    fovLiveInput.value = fov;
+    hudFov.textContent = fov + '°';
+    running = true;
+    resize();
+    draw();
+  } catch (e) {
+    errMsg.style.display = 'block';
+    errMsg.innerHTML = '⚠️ Camera access blocked.<br><br>This page must be served over HTTPS.<br>Upload to <b>tiiny.host</b> for a free instant link.';
+  }
+}
+
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.offsetWidth * dpr;
+  canvas.height = canvas.offsetHeight * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // comp canvas matches overlay canvas in CSS pixels (no DPR scaling needed for recording)
+  compCanvas.width = canvas.offsetWidth;
+  compCanvas.height = canvas.offsetHeight;
+}
+window.addEventListener('resize', () => { if (running) resize(); });
+
+function draw() {
+  if (!running) return;
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.offsetWidth;
+  const cssH = canvas.offsetHeight;
+  if (canvas.width !== cssW * dpr || canvas.height !== cssH * dpr) resize();
+
+  ctx.clearRect(0, 0, cssW, cssH);
+  drawOverlay(ctx, cssW, cssH);
+
+  // Also draw composite frame (video + overlay) for recording
+  if (isRecording) {
+    compCtx.drawImage(video, 0, 0, compCanvas.width, compCanvas.height);
+    drawOverlay(compCtx, compCanvas.width, compCanvas.height);
+  }
+
+  animId = requestAnimationFrame(draw);
+}
+
+function startRecording() {
+  recordedChunks = [];
+  // Capture stream from composite canvas at 30fps
+  const stream = compCanvas.captureStream(30);
+
+  // Pick best supported format
+  const mimeTypes = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'];
+  const mimeType = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || '';
+
+  try {
+    mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+  } catch(e) {
+    mediaRecorder = new MediaRecorder(stream);
+  }
+
+  mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
+  mediaRecorder.onstop = saveVideo;
+  mediaRecorder.start(100);
+
+  isRecording = true;
+  recBtn.classList.add('recording');
+  recIndicator.style.display = 'flex';
+  recStartTime = Date.now();
+  recTimerInterval = setInterval(updateRecTimer, 500);
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  isRecording = false;
+  recBtn.classList.remove('recording');
+  recIndicator.style.display = 'none';
+  clearInterval(recTimerInterval);
+  recDur.textContent = '00:00';
+}
+
+function updateRecTimer() {
+  const elapsed = Math.floor((Date.now() - recStartTime) / 1000);
+  const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+  const s = String(elapsed % 60).padStart(2, '0');
+  recDur.textContent = m + ':' + s;
+}
+
+function saveVideo() {
+  if (recordedChunks.length === 0) return;
+  const mimeType = mediaRecorder.mimeType || 'video/webm';
+  const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+  const blob = new Blob(recordedChunks, { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'fov-overlay-' + Date.now() + '.' + ext;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+  showToast('Video saved (' + ext.toUpperCase() + ')\nCheck your Downloads folder');
+}
+
+function showToast(msg) {
+  toast.innerHTML = msg.replace('\n', '<br>');
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 3500);
+}
+
+function drawOverlay(c, W, H) {
+  const cy = H / 2;
+  const halfFov = fov / 2;
+  const pxPerDeg = H / fov;
+  const axisX = W * 0.42;
+
+  c.save();
+
+  // Vertical dashed axis
+  c.strokeStyle = 'rgba(0,255,0,0.3)';
+  c.lineWidth = 1;
+  c.setLineDash([4, 8]);
+  c.beginPath(); c.moveTo(axisX, 0); c.lineTo(axisX, H); c.stroke();
+  c.setLineDash([]);
+
+  // Ticks
+  const startDeg = -Math.ceil(halfFov);
+  const endDeg = Math.ceil(halfFov);
+
+  for (let d = startDeg; d <= endDeg; d++) {
+    const y = cy - d * pxPerDeg;
+    if (y < -2 || y > H + 2) continue;
+    const isMajor = d % 10 === 0;
+    const isMid = d % 5 === 0;
+    let tickW, strokeW, alpha;
+    if (isMajor)    { tickW = 34; strokeW = 1.5; alpha = 0.95; }
+    else if (isMid) { tickW = 20; strokeW = 1.0; alpha = 0.65; }
+    else            { tickW = 11; strokeW = 0.7; alpha = 0.38; }
+
+    c.strokeStyle = `rgba(0,255,0,${alpha})`;
+    c.lineWidth = strokeW;
+    c.beginPath();
+    c.moveTo(axisX - tickW / 2, y);
+    c.lineTo(axisX + tickW / 2, y);
+    c.stroke();
+
+    if (isMajor) {
+      const label = d + '°';
+      c.font = '700 11px "Courier New", monospace';
+      c.textAlign = 'left';
+      c.textBaseline = 'middle';
+      const tw = c.measureText(label).width;
+      c.fillStyle = 'rgba(0,0,0,0.45)';
+      c.fillRect(axisX + 22, y - 8, tw + 6, 16);
+      c.fillStyle = '#00ff00';
+      c.globalAlpha = 0.9;
+      c.fillText(label, axisX + 24, y);
+      c.globalAlpha = 1.0;
+    }
+  }
+
+  // Crosshair
+  const cs = 18;
+  c.strokeStyle = 'rgba(0,255,0,0.7)';
+  c.lineWidth = 1.2;
+  c.beginPath();
+  c.moveTo(axisX - cs, cy); c.lineTo(axisX - 5, cy);
+  c.moveTo(axisX + 5, cy); c.lineTo(axisX + cs, cy);
+  c.moveTo(axisX, cy - cs); c.lineTo(axisX, cy - 5);
+  c.moveTo(axisX, cy + 5); c.lineTo(axisX, cy + cs);
+  c.stroke();
+  const cb = 5;
+  c.strokeStyle = '#00ff00';
+  c.lineWidth = 1.5;
+  c.strokeRect(axisX - cb, cy - cb, cb * 2, cb * 2);
+
+  // Edge markers
+  [-1, 1].forEach(side => {
+    const ey = cy - side * halfFov * pxPerDeg;
+    if (ey < 0 || ey > H) return;
+    c.strokeStyle = 'rgba(0,255,0,0.55)';
+    c.lineWidth = 1;
+    c.beginPath();
+    c.moveTo(axisX - 26, ey); c.lineTo(axisX + 26, ey); c.stroke();
+    const label = (side > 0 ? '+' : '-') + halfFov.toFixed(1) + '°';
+    c.font = '700 9px "Courier New", monospace';
+    c.textAlign = 'left';
+    c.textBaseline = 'middle';
+    const tw = c.measureText(label).width;
+    c.fillStyle = 'rgba(0,0,0,0.5)';
+    c.fillRect(axisX + 30, ey - 8, tw + 6, 16);
+    c.fillStyle = '#00cc00';
+    c.fillText(label, axisX + 32, ey);
+  });
+
+  // Horizon line
+  c.strokeStyle = 'rgba(0,255,0,0.18)';
+  c.lineWidth = 0.8;
+  c.beginPath(); c.moveTo(0, cy); c.lineTo(W, cy); c.stroke();
+
+  // Timestamp
+  const now = new Date().toLocaleTimeString();
+  c.font = '600 10px "Courier New", monospace';
+  c.textAlign = 'left';
+  c.textBaseline = 'top';
+  c.fillStyle = 'rgba(0,0,0,0.4)';
+  c.fillRect(12, 14, 126, 32);
+  c.fillStyle = '#00ff00';
+  c.globalAlpha = 0.55;
+  c.fillText('FIELDVIEW', 16, 18);
+  c.fillText(now, 16, 31);
+  c.globalAlpha = 1.0;
+
+  c.restore();
+}
+</script>
+</body>
+</html>
