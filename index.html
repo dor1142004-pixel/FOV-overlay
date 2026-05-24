@@ -9,45 +9,38 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: 100%; height: 100%; background: #000; font-family: 'Courier New', monospace; overflow: hidden; }
 
-  /* ── shared screen base ── */
   .screen {
     position: absolute; inset: 0; display: none;
     flex-direction: column; align-items: center; justify-content: center;
-    gap: 22px; padding: 40px 28px;
-    background: #000; overflow-y: auto;
+    gap: 22px; padding: 40px 28px; background: #000; overflow-y: auto;
   }
   .screen.active { display: flex; }
 
   .logo { font-size: 10px; letter-spacing: 4px; color: #444; text-transform: uppercase; }
-  .screen-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.5px; text-align: center; }
+  .screen-title { font-size: 22px; font-weight: 700; color: #fff; text-align: center; }
   .screen-sub { font-size: 12px; color: #555; text-align: center; line-height: 1.7; font-family: system-ui, sans-serif; max-width: 260px; }
 
-  /* ── number input ── */
   .big-input-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; max-width: 280px; }
   .big-input-label { font-size: 10px; letter-spacing: 3px; color: #444; text-transform: uppercase; }
   .big-input-row { display: flex; align-items: center; gap: 10px; background: #111; border: 1px solid #222; border-radius: 10px; padding: 10px 16px; width: 100%; }
   .big-input-row input[type=number] {
-    background: transparent; border: none; outline: none;
-    color: #0f0; font-family: 'Courier New', monospace;
-    font-size: 36px; font-weight: 700; flex: 1; width: 0;
+    background: transparent; border: none; outline: none; color: #0f0;
+    font-family: 'Courier New', monospace; font-size: 36px; font-weight: 700; flex: 1; width: 0;
     -moz-appearance: textfield;
   }
   .big-input-row input::-webkit-inner-spin-button,
   .big-input-row input::-webkit-outer-spin-button { -webkit-appearance: none; }
   .big-unit { font-size: 13px; color: #444; }
 
-  /* two-column inputs */
   .input-row-2 { display: flex; gap: 12px; width: 100%; max-width: 280px; }
   .input-col { flex: 1; display: flex; flex-direction: column; gap: 6px; }
   .input-col label { font-size: 10px; letter-spacing: 2px; color: #444; text-transform: uppercase; }
   .input-col .big-input-row { padding: 8px 12px; }
   .input-col .big-input-row input { font-size: 26px; }
 
-  /* ── result box ── */
   .result-box {
-    width: 100%; max-width: 280px;
-    background: #0a1a0a; border: 1px solid #1a3a1a; border-radius: 10px;
-    padding: 14px 16px; text-align: center; display: none;
+    width: 100%; max-width: 280px; background: #0a1a0a; border: 1px solid #1a3a1a;
+    border-radius: 10px; padding: 14px 16px; text-align: center; display: none;
   }
   .result-box.visible { display: block; }
   .result-label { font-size: 10px; letter-spacing: 3px; color: #4a7a4a; text-transform: uppercase; margin-bottom: 6px; }
@@ -55,7 +48,6 @@
   .result-unit { font-size: 16px; color: #0a0; }
   .result-formula { font-size: 10px; color: #2a4a2a; margin-top: 6px; font-family: system-ui, sans-serif; }
 
-  /* ── buttons ── */
   .btn-green {
     background: #0f0; color: #000; border: none; border-radius: 8px;
     font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
@@ -63,23 +55,21 @@
     width: 100%; max-width: 280px; -webkit-tap-highlight-color: transparent;
   }
   .btn-green:active { opacity: 0.7; }
-
   .btn-outline {
     background: transparent; color: #555; border: 1px solid #2a2a2a; border-radius: 8px;
-    font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
-    padding: 13px; cursor: pointer; font-family: 'Courier New', monospace;
+    font-size: 12px; letter-spacing: 2px; text-transform: uppercase; padding: 13px;
+    cursor: pointer; font-family: 'Courier New', monospace;
     width: 100%; max-width: 280px; -webkit-tap-highlight-color: transparent;
   }
   .btn-outline:active { border-color: #0f0; color: #0f0; }
-
   .divider {
     font-size: 10px; color: #2a2a2a; letter-spacing: 2px;
     display: flex; align-items: center; gap: 10px; width: 100%; max-width: 280px;
   }
   .divider::before, .divider::after { content:''; flex:1; height:1px; background:#1a1a1a; }
 
-  /* ── camera screen ── */
-  #screen-cam { padding: 0; background: #000; }
+  /* camera screen */
+  #screen-cam { padding: 0; }
   #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   #overlay-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
@@ -94,9 +84,30 @@
     position: absolute; bottom: calc(env(safe-area-inset-bottom,0px) + 24px);
     left: 50%; transform: translateX(-50%);
     color: #0f0; font-size: 12px; letter-spacing: 2px; z-index: 10;
-    background: rgba(0,0,0,0.55); padding: 6px 16px; border-radius: 6px;
-    white-space: nowrap;
+    background: rgba(0,0,0,0.55); padding: 6px 16px; border-radius: 6px; white-space: nowrap;
   }
+
+  /* record button */
+  #rec-btn {
+    position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
+    width: 64px; height: 64px; border-radius: 50%; border: 3px solid #fff;
+    background: rgba(0,0,0,0.35); cursor: pointer; z-index: 10;
+    display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #rec-btn .inner {
+    width: 44px; height: 44px; border-radius: 50%; background: #f33;
+    transition: border-radius 0.2s, width 0.2s, height 0.2s;
+  }
+  #rec-btn.recording .inner { border-radius: 6px; width: 26px; height: 26px; }
+
+  #rec-indicator {
+    position: absolute; top: calc(env(safe-area-inset-top,0px) + 14px); right: 16px;
+    display: none; align-items: center; gap: 8px; z-index: 10;
+  }
+  .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: #f33; animation: blink 1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  #rec-dur { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: 2px; }
 </style>
 </head>
 <body>
@@ -105,7 +116,6 @@
 <div class="screen active" id="screen-home">
   <div class="logo">Fieldview</div>
   <div class="screen-title">FOV Overlay</div>
-
   <div class="big-input-wrap">
     <span class="big-input-label">Vertical FOV</span>
     <div class="big-input-row">
@@ -113,26 +123,17 @@
       <span class="big-unit">°</span>
     </div>
   </div>
-
   <button class="btn-green" id="btn-start">Start Camera</button>
-
   <div class="divider">or</div>
-
-  <button class="btn-outline" id="btn-cal">Calibrate VFOV →</button>
+  <button class="btn-outline" id="btn-go-cal">Calibrate VFOV →</button>
 </div>
 
 <!-- Screen 2: Calibration -->
 <div class="screen" id="screen-cal">
   <div class="logo">Fieldview</div>
   <div class="screen-title">Calibrate</div>
-  <p class="screen-sub">
-    Stand at a known distance from a ruler.<br>
-    Frame so the ruler fills the full height of the screen — bottom of ruler at bottom of frame, top at top.
-  </p>
-  <p class="screen-sub" style="color:#2a4a2a;font-size:11px;">
-    VFOV = atan( ruler height / distance )
-  </p>
-
+  <p class="screen-sub">Stand at a known distance from a ruler. Center the ruler in the frame so the top and bottom edges align with the top and bottom of the screen.</p>
+  <p class="screen-sub" style="color:#2a4a2a;font-size:11px;">VFOV = 2 × atan( (ruler/2) / distance )</p>
   <div class="input-row-2">
     <div class="input-col">
       <label>Ruler height</label>
@@ -149,13 +150,11 @@
       </div>
     </div>
   </div>
-
   <div class="result-box" id="cal-result">
     <div class="result-label">Computed VFOV</div>
     <div><span class="result-val" id="cal-result-val">—</span><span class="result-unit"> °</span></div>
     <div class="result-formula" id="cal-formula"></div>
   </div>
-
   <button class="btn-green" id="btn-use-cal" style="display:none;">Use this VFOV</button>
   <button class="btn-outline" id="btn-cal-back">← Back</button>
 </div>
@@ -164,12 +163,14 @@
 <div class="screen" id="screen-cam">
   <video id="video" autoplay playsinline muted></video>
   <canvas id="overlay-canvas"></canvas>
+  <canvas id="comp-canvas" style="display:none;"></canvas>
   <button id="cam-back">← Back</button>
   <div id="cam-fov-label"></div>
+  <div id="rec-btn"><div class="inner"></div></div>
+  <div id="rec-indicator"><div class="rec-dot"></div><span id="rec-dur">00:00</span></div>
 </div>
 
 <script>
-// ── screen navigation ──────────────────────────────────────
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -177,46 +178,42 @@ function show(id) {
 
 let fov = 66;
 let animId;
-const video  = document.getElementById('video');
-const canvas = document.getElementById('overlay-canvas');
-const ctx    = canvas.getContext('2d');
+const video      = document.getElementById('video');
+const canvas     = document.getElementById('overlay-canvas');
+const ctx        = canvas.getContext('2d');
+const compCanvas = document.getElementById('comp-canvas');
+const compCtx    = compCanvas.getContext('2d');
 
-// ── screen 1 ──────────────────────────────────────────────
-document.getElementById('btn-cal').addEventListener('click', () => {
-  computeCal();
-  show('screen-cal');
+// ── Screen 1 ──────────────────────────────────────────────
+document.getElementById('btn-go-cal').addEventListener('click', () => {
+  computeCal(); show('screen-cal');
 });
-
 document.getElementById('btn-start').addEventListener('click', () => {
   fov = parseFloat(document.getElementById('fov-val').value) || 66;
   startCamera();
 });
 
-// ── screen 2: calibration ─────────────────────────────────
-const calRuler   = document.getElementById('cal-ruler');
-const calDist    = document.getElementById('cal-dist');
-const calResult  = document.getElementById('cal-result');
-const calResVal  = document.getElementById('cal-result-val');
-const calFormula = document.getElementById('cal-formula');
-const btnUseCal  = document.getElementById('btn-use-cal');
-
+// ── Screen 2: calibration ─────────────────────────────────
+const calRuler  = document.getElementById('cal-ruler');
+const calDist   = document.getElementById('cal-dist');
+const calResult = document.getElementById('cal-result');
+const calResVal = document.getElementById('cal-result-val');
+const calFml    = document.getElementById('cal-formula');
+const btnUseCal = document.getElementById('btn-use-cal');
 let computedVfov = null;
 
 function computeCal() {
   const h = parseFloat(calRuler.value);
   const d = parseFloat(calDist.value);
   if (!h || !d || d <= 0 || h <= 0) {
-    calResult.classList.remove('visible');
-    btnUseCal.style.display = 'none';
-    return;
+    calResult.classList.remove('visible'); btnUseCal.style.display = 'none'; return;
   }
-  computedVfov = Math.atan(h / d) * (180 / Math.PI);
+  computedVfov = 2 * Math.atan((h / 2) / d) * (180 / Math.PI);
   calResVal.textContent = computedVfov.toFixed(1);
-  calFormula.textContent = 'atan(' + h + ' / ' + d + ') = ' + computedVfov.toFixed(2) + '°';
+  calFml.textContent = '2 × atan(' + (h/2).toFixed(1) + ' / ' + d + ') = ' + computedVfov.toFixed(2) + '°';
   calResult.classList.add('visible');
   btnUseCal.style.display = 'block';
 }
-
 calRuler.addEventListener('input', computeCal);
 calDist.addEventListener('input',  computeCal);
 
@@ -226,10 +223,9 @@ document.getElementById('btn-use-cal').addEventListener('click', () => {
   document.getElementById('fov-val').value = fov;
   show('screen-home');
 });
-
 document.getElementById('btn-cal-back').addEventListener('click', () => show('screen-home'));
 
-// ── screen 3: camera ──────────────────────────────────────
+// ── Screen 3: camera ──────────────────────────────────────
 async function startCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -240,44 +236,103 @@ async function startCamera() {
     await video.play();
     show('screen-cam');
     document.getElementById('cam-fov-label').textContent = 'VFOV ' + fov + '°';
-    resize();
-    cancelAnimationFrame(animId);
-    draw();
+    resize(); cancelAnimationFrame(animId); draw();
   } catch(e) {
     alert('Camera blocked. Serve over HTTPS (GitHub Pages).');
   }
 }
 
 document.getElementById('cam-back').addEventListener('click', () => {
+  if (isRecording) stopRecording();
   cancelAnimationFrame(animId);
   if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
   show('screen-home');
 });
 
-// ── canvas ────────────────────────────────────────────────
+// ── Recording ─────────────────────────────────────────────
+let mediaRecorder = null, recordedChunks = [], isRecording = false;
+let recStartTime = null, recTimerInterval = null;
+const recBtn       = document.getElementById('rec-btn');
+const recIndicator = document.getElementById('rec-indicator');
+const recDur       = document.getElementById('rec-dur');
+
+recBtn.addEventListener('click', () => { if (!isRecording) startRecording(); else stopRecording(); });
+
+function startRecording() {
+  recordedChunks = [];
+  const stream = compCanvas.captureStream(30);
+  const mimeTypes = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'];
+  const mimeType = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || '';
+  try { mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {}); }
+  catch(e) { mediaRecorder = new MediaRecorder(stream); }
+  mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
+  mediaRecorder.onstop = saveVideo;
+  mediaRecorder.start(100);
+  isRecording = true;
+  recBtn.classList.add('recording');
+  recIndicator.style.display = 'flex';
+  recStartTime = Date.now();
+  recTimerInterval = setInterval(() => {
+    const s = Math.floor((Date.now() - recStartTime) / 1000);
+    recDur.textContent = String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+  }, 500);
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  isRecording = false;
+  recBtn.classList.remove('recording');
+  recIndicator.style.display = 'none';
+  clearInterval(recTimerInterval);
+  recDur.textContent = '00:00';
+}
+
+function saveVideo() {
+  if (!recordedChunks.length) return;
+  const mimeType = mediaRecorder.mimeType || 'video/webm';
+  const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+  const blob = new Blob(recordedChunks, { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'fov-' + Date.now() + '.' + ext; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+// ── Canvas / draw ─────────────────────────────────────────
 function resize() {
   const dpr = window.devicePixelRatio || 1;
   canvas.width  = canvas.offsetWidth  * dpr;
   canvas.height = canvas.offsetHeight * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  compCanvas.width  = canvas.offsetWidth;
+  compCanvas.height = canvas.offsetHeight;
 }
-window.addEventListener('resize', () => { if (document.getElementById('screen-cam').classList.contains('active')) resize(); });
+window.addEventListener('resize', () => {
+  if (document.getElementById('screen-cam').classList.contains('active')) resize();
+});
 
 function draw() {
   const W = canvas.offsetWidth, H = canvas.offsetHeight;
   ctx.clearRect(0, 0, W, H);
+  drawOverlay(ctx, W, H);
+  if (isRecording) {
+    compCtx.drawImage(video, 0, 0, compCanvas.width, compCanvas.height);
+    drawOverlay(compCtx, compCanvas.width, compCanvas.height);
+  }
+  animId = requestAnimationFrame(draw);
+}
 
-  const cy      = H / 2;
+function drawOverlay(c, W, H) {
+  const cy = H / 2;
   const halfFov = fov / 2;
   const pxPerDeg = H / fov;
-  const axisX   = W * 0.5;
-
-  ctx.save();
+  const axisX = W * 0.5;
+  c.save();
 
   // dashed axis
-  ctx.strokeStyle = 'rgba(0,255,0,0.25)'; ctx.lineWidth = 1; ctx.setLineDash([4,8]);
-  ctx.beginPath(); ctx.moveTo(axisX, 0); ctx.lineTo(axisX, H); ctx.stroke();
-  ctx.setLineDash([]);
+  c.strokeStyle = 'rgba(0,255,0,0.25)'; c.lineWidth = 1; c.setLineDash([4,8]);
+  c.beginPath(); c.moveTo(axisX,0); c.lineTo(axisX,H); c.stroke();
+  c.setLineDash([]);
 
   // ticks
   for (let d = -Math.ceil(halfFov); d <= Math.ceil(halfFov); d++) {
@@ -288,49 +343,47 @@ function draw() {
     if (isMajor)    { tw=36; sw=1.5; alpha=0.95; }
     else if (isMid) { tw=22; sw=1.0; alpha=0.6;  }
     else            { tw=12; sw=0.7; alpha=0.35; }
-    ctx.strokeStyle = `rgba(0,255,0,${alpha})`; ctx.lineWidth = sw;
-    ctx.beginPath(); ctx.moveTo(axisX-tw/2, y); ctx.lineTo(axisX+tw/2, y); ctx.stroke();
+    c.strokeStyle = `rgba(0,255,0,${alpha})`; c.lineWidth = sw;
+    c.beginPath(); c.moveTo(axisX-tw/2,y); c.lineTo(axisX+tw/2,y); c.stroke();
     if (isMajor) {
       const lbl = d + '°';
-      ctx.font = '700 12px "Courier New",monospace';
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      const lw = ctx.measureText(lbl).width;
-      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(axisX+22, y-9, lw+8, 18);
-      ctx.fillStyle = '#00ff00'; ctx.globalAlpha = 0.9;
-      ctx.fillText(lbl, axisX+25, y); ctx.globalAlpha = 1;
+      c.font = '700 12px "Courier New",monospace';
+      c.textAlign = 'left'; c.textBaseline = 'middle';
+      const lw = c.measureText(lbl).width;
+      c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(axisX+22,y-9,lw+8,18);
+      c.fillStyle = '#00ff00'; c.globalAlpha = 0.9;
+      c.fillText(lbl, axisX+25, y); c.globalAlpha = 1;
     }
   }
 
   // crosshair
-  ctx.strokeStyle = 'rgba(0,255,0,0.7)'; ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.moveTo(axisX-20,cy); ctx.lineTo(axisX-6,cy);
-  ctx.moveTo(axisX+6, cy); ctx.lineTo(axisX+20,cy);
-  ctx.moveTo(axisX,cy-20); ctx.lineTo(axisX,cy-6);
-  ctx.moveTo(axisX,cy+6);  ctx.lineTo(axisX,cy+20);
-  ctx.stroke();
-  ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 1.5;
-  ctx.strokeRect(axisX-5, cy-5, 10, 10);
+  c.strokeStyle = 'rgba(0,255,0,0.7)'; c.lineWidth = 1.2;
+  c.beginPath();
+  c.moveTo(axisX-20,cy); c.lineTo(axisX-6,cy);
+  c.moveTo(axisX+6, cy); c.lineTo(axisX+20,cy);
+  c.moveTo(axisX,cy-20); c.lineTo(axisX,cy-6);
+  c.moveTo(axisX,cy+6);  c.lineTo(axisX,cy+20);
+  c.stroke();
+  c.strokeStyle='#00ff00'; c.lineWidth=1.5;
+  c.strokeRect(axisX-5,cy-5,10,10);
 
-  // top / bottom edge lines
-  [-1, 1].forEach(s => {
+  // edge lines
+  [-1,1].forEach(s => {
     const ey = cy - s * halfFov * pxPerDeg;
     if (ey < 0 || ey > H) return;
-    ctx.strokeStyle = 'rgba(0,255,0,0.5)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0, ey); ctx.lineTo(W, ey); ctx.stroke();
-    const lbl = (s > 0 ? '+' : '') + (s * halfFov).toFixed(1) + '°';
-    ctx.font = '700 10px "Courier New",monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = s > 0 ? 'bottom' : 'top';
-    const lw = ctx.measureText(lbl).width;
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(axisX - lw/2 - 4, s > 0 ? ey-17 : ey+1, lw+8, 15);
-    ctx.fillStyle = '#00cc00';
-    ctx.fillText(lbl, axisX, s > 0 ? ey-3 : ey+3);
+    c.strokeStyle='rgba(0,255,0,0.5)'; c.lineWidth=1;
+    c.beginPath(); c.moveTo(0,ey); c.lineTo(W,ey); c.stroke();
+    const lbl = (s>0?'+':'') + (s*halfFov).toFixed(1)+'°';
+    c.font='700 10px "Courier New",monospace';
+    c.textAlign='center'; c.textBaseline = s>0?'bottom':'top';
+    const lw = c.measureText(lbl).width;
+    c.fillStyle='rgba(0,0,0,0.5)';
+    c.fillRect(axisX-lw/2-4, s>0?ey-17:ey+1, lw+8, 15);
+    c.fillStyle='#00cc00';
+    c.fillText(lbl, axisX, s>0?ey-3:ey+3);
   });
 
-  ctx.restore();
-  animId = requestAnimationFrame(draw);
+  c.restore();
 }
 </script>
 </body>
