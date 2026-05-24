@@ -19,64 +19,13 @@
   #start-screen {
     position: absolute; inset: 0; background: #000;
     display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-    gap: 16px; z-index: 10; padding: 40px 28px 32px; overflow-y: auto;
+    gap: 16px; z-index: 10; padding: 44px 28px 32px; overflow-y: auto;
   }
   .logo { font-size: 11px; letter-spacing: 4px; color: #555; text-transform: uppercase; }
-  h1 { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: -0.5px; text-align: center; line-height: 1.2; margin-bottom: 4px; }
-
+  h1 { font-size: 24px; font-weight: 700; color: #fff; text-align: center; line-height: 1.2; margin-bottom: 4px; }
   .section-title {
     font-size: 10px; letter-spacing: 3px; color: #333; text-transform: uppercase;
     width: 100%; max-width: 300px; padding-bottom: 8px; border-bottom: 1px solid #1a1a1a;
-  }
-
-  /* ── Calibration tool ── */
-  #cal-box {
-    width: 100%; max-width: 300px;
-    background: #080808; border: 1px solid #1e1e1e; border-radius: 10px;
-    padding: 14px; display: flex; flex-direction: column; gap: 12px;
-  }
-  .cal-instruction {
-    font-size: 11px; color: #555; line-height: 1.6; font-family: system-ui, sans-serif;
-    text-align: center;
-  }
-
-  .cal-pitch-display {
-    text-align: center;
-  }
-  .cal-pitch-label { font-size: 9px; color: #333; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 4px; }
-  .cal-pitch-val { font-size: 32px; font-weight: 700; color: #0f0; letter-spacing: -1px; }
-  .cal-pitch-unit { font-size: 13px; color: #0a0; }
-
-  .cal-marks { display: flex; gap: 8px; }
-  .cal-mark-btn {
-    flex: 1; background: #111; border: 1px solid #222; border-radius: 8px;
-    color: #666; font-family: 'Courier New', monospace; font-size: 10px;
-    letter-spacing: 1px; text-transform: uppercase; padding: 10px 6px;
-    cursor: pointer; text-align: center; line-height: 1.5;
-    -webkit-tap-highlight-color: transparent; transition: border-color 0.15s;
-  }
-  .cal-mark-btn.set { border-color: #0f0; color: #0f0; background: #0a1a0a; }
-  .cal-mark-btn:active { background: #0a2a0a; }
-  .cal-mark-val { font-size: 13px; font-weight: 700; display: block; margin-top: 2px; }
-
-  #cal-result {
-    display: none; background: #0a1a0a; border: 1px solid #1a3a1a;
-    border-radius: 8px; padding: 12px; text-align: center;
-  }
-  .cal-result-label { font-size: 9px; color: #4a6a4a; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 4px; }
-  .cal-result-val { font-size: 26px; font-weight: 700; color: #0f0; }
-
-  #use-cal-btn {
-    width: 100%; background: #0a2a0a; border: 1px solid #0f0; border-radius: 6px;
-    color: #0f0; font-family: 'Courier New', monospace; font-size: 11px;
-    letter-spacing: 2px; text-transform: uppercase; padding: 10px;
-    cursor: pointer; -webkit-tap-highlight-color: transparent; display: none;
-  }
-  #use-cal-btn:active { background: #0f0; color: #000; }
-
-  #cal-permission-err {
-    font-size: 11px; color: #f66; text-align: center; display: none;
-    line-height: 1.6; font-family: system-ui, sans-serif;
   }
 
   /* ── Manual FOV ── */
@@ -117,7 +66,7 @@
   }
   #start-btn:active { opacity: 0.7; }
 
-  /* ── Camera UI ── */
+  /* ── Camera HUD ── */
   #hud {
     position: absolute; bottom: 0; left: 0; right: 0;
     padding: 16px 24px; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
@@ -128,6 +77,94 @@
   .hud-fov-val { font-size: 22px; font-weight: 700; color: #0f0; letter-spacing: -1px; line-height: 1; }
   .hud-label { font-size: 9px; color: #0a0; letter-spacing: 2px; margin-top: 2px; }
 
+  /* calibrate button in HUD */
+  #cal-hud-btn {
+    background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 8px;
+    color: #aaa; font-family: 'Courier New', monospace; font-size: 9px;
+    letter-spacing: 1px; text-transform: uppercase; padding: 6px 10px;
+    cursor: pointer; -webkit-tap-highlight-color: transparent; white-space: nowrap;
+  }
+  #cal-hud-btn:active { border-color: #0f0; color: #0f0; }
+
+  /* ── Calibration overlay (on top of live camera) ── */
+  #cal-overlay {
+    position: absolute; inset: 0; z-index: 8;
+    display: none; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: calc(env(safe-area-inset-top,0px) + 16px) 0 calc(env(safe-area-inset-bottom,0px) + 20px);
+    pointer-events: none;
+  }
+  #cal-overlay.active { display: flex; pointer-events: all; }
+
+  /* horizontal aim line drawn across full width */
+  #cal-aim-line {
+    position: absolute; left: 0; right: 0; height: 1px;
+    background: rgba(255,200,0,0.85); top: 50%;
+    pointer-events: none;
+  }
+  #cal-aim-label {
+    position: absolute; top: calc(50% + 6px); left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px; color: rgba(255,200,0,0.7); letter-spacing: 2px;
+    pointer-events: none;
+  }
+
+  /* top panel */
+  .cal-top-panel {
+    background: rgba(0,0,0,0.7); border: 1px solid #222; border-radius: 10px;
+    padding: 12px 16px; display: flex; flex-direction: column; align-items: center;
+    gap: 6px; width: calc(100% - 40px); max-width: 320px;
+  }
+  .cal-title { font-size: 10px; letter-spacing: 3px; color: #555; text-transform: uppercase; }
+  .cal-instruction-live { font-size: 11px; color: #888; text-align: center; line-height: 1.5; font-family: system-ui, sans-serif; }
+  .cal-pitch-big { font-size: 36px; font-weight: 700; color: #0f0; letter-spacing: -2px; line-height: 1; }
+  .cal-pitch-unit-sm { font-size: 14px; color: #0a0; }
+
+  /* bottom panel with mark buttons */
+  .cal-bottom-panel {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    width: calc(100% - 40px); max-width: 320px;
+  }
+  .cal-marks-row { display: flex; gap: 10px; width: 100%; }
+  .cal-mark-btn {
+    flex: 1; background: rgba(0,0,0,0.75); border: 1px solid #333; border-radius: 10px;
+    color: #666; font-family: 'Courier New', monospace; font-size: 10px;
+    letter-spacing: 1px; text-transform: uppercase; padding: 12px 6px;
+    cursor: pointer; text-align: center; line-height: 1.5;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cal-mark-btn.set { border-color: #0f0; color: #0f0; background: rgba(0,20,0,0.85); }
+  .cal-mark-btn:active { background: rgba(0,40,0,0.9); }
+  .cal-mark-val { font-size: 14px; font-weight: 700; display: block; margin-top: 3px; }
+
+  #cal-result-bar {
+    display: none; background: rgba(0,20,0,0.85); border: 1px solid #0f0;
+    border-radius: 8px; padding: 10px 16px; width: 100%;
+    display: none; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  #cal-result-bar.visible { display: flex; }
+  .cal-res-label { font-size: 9px; color: #4a8a4a; letter-spacing: 2px; text-transform: uppercase; }
+  .cal-res-val { font-size: 22px; font-weight: 700; color: #0f0; }
+  #apply-cal-btn {
+    background: #0f0; color: #000; border: none; border-radius: 6px;
+    font-family: 'Courier New', monospace; font-size: 10px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase; padding: 8px 14px;
+    cursor: pointer; -webkit-tap-highlight-color: transparent; white-space: nowrap;
+  }
+  #apply-cal-btn:active { opacity: 0.7; }
+
+  #cal-close-btn {
+    position: absolute; top: calc(env(safe-area-inset-top,0px) + 14px); right: 16px;
+    background: rgba(0,0,0,0.6); border: 1px solid #333; border-radius: 50%;
+    width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: #888; font-size: 16px; -webkit-tap-highlight-color: transparent;
+  }
+
+  #cal-perm-err {
+    font-size: 11px; color: #f66; text-align: center; line-height: 1.6;
+    font-family: system-ui, sans-serif; display: none; padding: 0 16px;
+  }
+
+  /* ── Record button ── */
   #rec-btn {
     position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
     width: 64px; height: 64px; border-radius: 50%; border: 3px solid #fff;
@@ -174,7 +211,6 @@
     color: #0f0; font-size: 12px; padding: 10px 20px; letter-spacing: 1px;
     display: none; white-space: nowrap; z-index: 20; text-align: center; line-height: 1.6;
   }
-
   #err-msg {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
     color: #f66; font-size: 13px; text-align: center; padding: 20px 24px;
@@ -186,41 +222,13 @@
 </head>
 <body>
 <div id="app">
+
+  <!-- Start screen -->
   <div id="start-screen">
     <div class="logo">Fieldview</div>
     <h1>FOV Overlay</h1>
 
-    <span class="section-title">Calibrate with pitch sensor</span>
-
-    <div id="cal-box">
-      <p class="cal-instruction">Hold phone upright. Aim at the <b style="color:#0a0">top edge</b> of a target, mark it. Then aim at the <b style="color:#0a0">bottom edge</b> and mark it.</p>
-
-      <div class="cal-pitch-display">
-        <div class="cal-pitch-label">Current pitch</div>
-        <div><span class="cal-pitch-val" id="cal-pitch-val">—</span><span class="cal-pitch-unit"> °</span></div>
-      </div>
-
-      <div class="cal-marks">
-        <button class="cal-mark-btn" id="mark-top-btn">
-          Top edge<br>
-          <span class="cal-mark-val" id="mark-top-val">—</span>
-        </button>
-        <button class="cal-mark-btn" id="mark-bot-btn">
-          Bottom edge<br>
-          <span class="cal-mark-val" id="mark-bot-val">—</span>
-        </button>
-      </div>
-
-      <div id="cal-result">
-        <div class="cal-result-label">Measured VFOV</div>
-        <div class="cal-result-val" id="cal-result-val">—</div>
-      </div>
-
-      <button id="use-cal-btn">Use this VFOV ↓</button>
-      <div id="cal-permission-err">Motion sensor access denied.<br>On iPhone: Settings → Safari → Motion & Orientation Access → On</div>
-    </div>
-
-    <span class="section-title">Manual</span>
+    <span class="section-title">Set VFOV</span>
 
     <div class="fov-input-wrap">
       <span class="fov-label">Vertical FOV</span>
@@ -237,32 +245,81 @@
     <div id="presets">
       <button class="preset-btn" data-fov="46">iPhone (1×)</button>
       <button class="preset-btn" data-fov="72">iPhone (UW)</button>
-      <button class="preset-btn" data-fov="66">Calibrated</button>
+      <button class="preset-btn" data-fov="66">My camera</button>
       <button class="preset-btn" data-fov="73">GoPro 12</button>
       <button class="preset-btn" data-fov="49">DJI Mini 3</button>
     </div>
 
+    <p style="font-size:11px;color:#444;text-align:center;max-width:260px;line-height:1.6;font-family:system-ui,sans-serif;">
+      Not sure? Start the camera and use the <b style="color:#666">Calibrate</b> button to measure VFOV live.
+    </p>
+
     <button id="start-btn">Start Camera</button>
   </div>
 
+  <!-- Camera feed -->
   <video id="video" autoplay playsinline muted></video>
   <canvas id="overlay-canvas"></canvas>
   <canvas id="comp-canvas"></canvas>
 
+  <!-- Calibration overlay — shown on top of live camera -->
+  <div id="cal-overlay">
+    <div id="cal-aim-line"></div>
+    <div id="cal-aim-label">AIM HERE</div>
+
+    <div id="cal-close-btn">✕</div>
+
+    <div class="cal-top-panel">
+      <div class="cal-title">Calibrate VFOV</div>
+      <p class="cal-instruction-live">Aim the centre line at the <b style="color:#fc0">top edge</b> of a target, tap Mark Top. Then aim at the <b style="color:#fc0">bottom edge</b> and tap Mark Bottom.</p>
+      <div>
+        <span class="cal-pitch-big" id="live-pitch-val">—</span>
+        <span class="cal-pitch-unit-sm">°</span>
+      </div>
+      <div id="cal-perm-err">Motion access denied.<br>Settings → Safari → Motion & Orientation Access → On</div>
+    </div>
+
+    <div class="cal-bottom-panel">
+      <div class="cal-marks-row">
+        <button class="cal-mark-btn" id="mark-top-btn">
+          Top edge<br>
+          <span class="cal-mark-val" id="mark-top-val">—</span>
+        </button>
+        <button class="cal-mark-btn" id="mark-bot-btn">
+          Bottom edge<br>
+          <span class="cal-mark-val" id="mark-bot-val">—</span>
+        </button>
+      </div>
+      <div id="cal-result-bar">
+        <div>
+          <div class="cal-res-label">Measured VFOV</div>
+          <div class="cal-res-val" id="cal-res-val">—</div>
+        </div>
+        <button id="apply-cal-btn">Apply ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recording indicator -->
   <div id="rec-indicator">
     <div class="rec-dot"></div>
     <span id="rec-dur">00:00</span>
   </div>
 
+  <!-- Live FOV display -->
   <div id="fov-live-wrap">
     <span class="live-label">VFOV °</span>
     <input type="number" id="fov-live-input" min="5" max="180" value="49" />
   </div>
 
+  <!-- Bottom HUD -->
   <div id="hud">
     <div class="hud-side">
       <div class="hud-fov-val" id="hud-fov">49°</div>
       <div class="hud-label">VERT FOV</div>
+    </div>
+    <div>
+      <button id="cal-hud-btn">Calibrate</button>
     </div>
     <div class="hud-side" style="display:flex;justify-content:flex-end;">
       <div id="close-btn">✕</div>
@@ -293,6 +350,19 @@ const recIndicator = document.getElementById('rec-indicator');
 const recDur       = document.getElementById('rec-dur');
 const toast        = document.getElementById('toast');
 
+const calOverlay   = document.getElementById('cal-overlay');
+const calHudBtn    = document.getElementById('cal-hud-btn');
+const calCloseBtn  = document.getElementById('cal-close-btn');
+const livePitchVal = document.getElementById('live-pitch-val');
+const markTopBtn   = document.getElementById('mark-top-btn');
+const markBotBtn   = document.getElementById('mark-bot-btn');
+const markTopVal   = document.getElementById('mark-top-val');
+const markBotVal   = document.getElementById('mark-bot-val');
+const calResultBar = document.getElementById('cal-result-bar');
+const calResVal    = document.getElementById('cal-res-val');
+const applyCalBtn  = document.getElementById('apply-cal-btn');
+const calPermErr   = document.getElementById('cal-perm-err');
+
 let fov = 49;
 let running = false;
 let animId;
@@ -302,68 +372,63 @@ let recStartTime = null;
 let recTimerInterval = null;
 let isRecording = false;
 
-// ── Pitch-sensor calibration ─────────────────────────────────
+// ── Pitch sensor ─────────────────────────────────────────────
 let currentPitch = null;
 let markTop = null;
 let markBot = null;
-let sensorRunning = false;
+let sensorActive = false;
+let measuredVfov = null;
 
-const calPitchVal  = document.getElementById('cal-pitch-val');
-const markTopBtn   = document.getElementById('mark-top-btn');
-const markBotBtn   = document.getElementById('mark-bot-btn');
-const markTopVal   = document.getElementById('mark-top-val');
-const markBotVal   = document.getElementById('mark-bot-val');
-const calResult    = document.getElementById('cal-result');
-const calResultVal = document.getElementById('cal-result-val');
-const useCalBtn    = document.getElementById('use-cal-btn');
-const calPermErr   = document.getElementById('cal-permission-err');
-
-function onDeviceOrientation(e) {
-  // beta = pitch: -180 to 180, 0 = flat, 90 = upright portrait
+function onOrientation(e) {
   if (e.beta === null) return;
   currentPitch = e.beta;
-  calPitchVal.textContent = currentPitch.toFixed(1);
+  livePitchVal.textContent = currentPitch.toFixed(1);
 }
 
 function startSensor() {
-  if (sensorRunning) return;
-  // iOS 13+ requires explicit permission
+  if (sensorActive) return;
   if (typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function') {
     DeviceOrientationEvent.requestPermission()
       .then(state => {
         if (state === 'granted') {
-          window.addEventListener('deviceorientation', onDeviceOrientation);
-          sensorRunning = true;
-          calPermErr.style.display = 'none';
-        } else {
-          calPermErr.style.display = 'block';
-        }
+          window.addEventListener('deviceorientation', onOrientation);
+          sensorActive = true; calPermErr.style.display = 'none';
+        } else { calPermErr.style.display = 'block'; }
       })
       .catch(() => { calPermErr.style.display = 'block'; });
   } else {
-    // Android / older iOS
-    window.addEventListener('deviceorientation', onDeviceOrientation);
-    sensorRunning = true;
+    window.addEventListener('deviceorientation', onOrientation);
+    sensorActive = true;
   }
 }
 
-// Request permission on first tap of the calibration box
-document.getElementById('cal-box').addEventListener('click', () => {
-  if (!sensorRunning) startSensor();
-}, { once: false });
+function resetCal() {
+  markTop = null; markBot = null; measuredVfov = null;
+  markTopVal.textContent = '—'; markBotVal.textContent = '—';
+  markTopBtn.classList.remove('set'); markBotBtn.classList.remove('set');
+  calResultBar.classList.remove('visible');
+}
 
 function tryComputeVFOV() {
   if (markTop === null || markBot === null) return;
-  const vfov = Math.abs(markTop - markBot);
-  calResultVal.textContent = vfov.toFixed(1) + '°';
-  calResult.style.display = 'block';
-  useCalBtn.style.display = 'block';
-  useCalBtn._vfov = vfov;
+  measuredVfov = Math.abs(markTop - markBot);
+  calResVal.textContent = measuredVfov.toFixed(1) + '°';
+  calResultBar.classList.add('visible');
 }
 
+calHudBtn.addEventListener('click', () => {
+  resetCal();
+  calOverlay.classList.add('active');
+  startSensor();
+});
+
+calCloseBtn.addEventListener('click', () => {
+  calOverlay.classList.remove('active');
+});
+
 markTopBtn.addEventListener('click', () => {
-  if (currentPitch === null) { startSensor(); return; }
+  if (currentPitch === null) return;
   markTop = currentPitch;
   markTopVal.textContent = currentPitch.toFixed(1) + '°';
   markTopBtn.classList.add('set');
@@ -371,23 +436,24 @@ markTopBtn.addEventListener('click', () => {
 });
 
 markBotBtn.addEventListener('click', () => {
-  if (currentPitch === null) { startSensor(); return; }
+  if (currentPitch === null) return;
   markBot = currentPitch;
   markBotVal.textContent = currentPitch.toFixed(1) + '°';
   markBotBtn.classList.add('set');
   tryComputeVFOV();
 });
 
-useCalBtn.addEventListener('click', () => {
-  const v = useCalBtn._vfov;
-  if (!v) return;
-  fov = Math.max(5, Math.min(180, Math.round(v * 10) / 10));
+applyCalBtn.addEventListener('click', () => {
+  if (!measuredVfov) return;
+  fov = Math.max(5, Math.min(180, Math.round(measuredVfov * 10) / 10));
   fovInput.value = fov;
-  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('start-btn').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  fovLiveInput.value = fov;
+  hudFov.textContent = fov + '°';
+  calOverlay.classList.remove('active');
+  showToast('VFOV set to ' + fov + '°');
 });
 
-// ── Manual FOV controls ──────────────────────────────────────
+// ── Manual FOV ───────────────────────────────────────────────
 document.getElementById('fov-up').addEventListener('click', () => {
   fovInput.value = Math.min(180, parseInt(fovInput.value || 49) + 1);
   fov = parseInt(fovInput.value);
@@ -417,6 +483,7 @@ document.getElementById('start-btn').addEventListener('click', startCamera);
 
 closeBtn.addEventListener('click', () => {
   if (isRecording) stopRecording();
+  calOverlay.classList.remove('active');
   running = false;
   cancelAnimationFrame(animId);
   if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
@@ -429,8 +496,7 @@ closeBtn.addEventListener('click', () => {
 });
 
 recBtn.addEventListener('click', () => {
-  if (!isRecording) startRecording();
-  else stopRecording();
+  if (!isRecording) startRecording(); else stopRecording();
 });
 
 async function startCamera() {
@@ -448,8 +514,7 @@ async function startCamera() {
     fovLiveInput.value = fov;
     hudFov.textContent = fov + '°';
     running = true;
-    resize();
-    draw();
+    resize(); draw();
   } catch (e) {
     errMsg.style.display = 'block';
     errMsg.innerHTML = '⚠️ Camera access blocked.<br><br>This page must be served over HTTPS.<br>Upload to <b>GitHub Pages</b>.';
@@ -460,7 +525,7 @@ async function startCamera() {
 function startRecording() {
   recordedChunks = [];
   const stream = compCanvas.captureStream(30);
-  const mimeTypes = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'];
+  const mimeTypes = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'];
   const mimeType = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || '';
   try { mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {}); }
   catch(e) { mediaRecorder = new MediaRecorder(stream); }
@@ -499,16 +564,16 @@ function saveVideo() {
   const a = document.createElement('a');
   a.href = url; a.download = 'fov-overlay-' + Date.now() + '.' + ext; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
-  showToast('Video saved (' + ext.toUpperCase() + ')\nCheck your Downloads folder');
+  showToast('Video saved (' + ext.toUpperCase() + ')');
 }
 
 function showToast(msg) {
-  toast.innerHTML = msg.replace('\n', '<br>');
+  toast.textContent = msg;
   toast.style.display = 'block';
-  setTimeout(() => { toast.style.display = 'none'; }, 3500);
+  setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
 
-// ── Canvas / draw ────────────────────────────────────────────
+// ── Canvas ───────────────────────────────────────────────────
 function resize() {
   const dpr = window.devicePixelRatio || 1;
   canvas.width = canvas.offsetWidth * dpr;
@@ -538,81 +603,62 @@ function drawOverlay(c, W, H) {
   const halfFov = fov / 2;
   const pxPerDeg = H / fov;
   const axisX = W * 0.42;
-
   c.save();
 
   c.strokeStyle = 'rgba(0,255,0,0.3)';
-  c.lineWidth = 1;
-  c.setLineDash([4, 8]);
-  c.beginPath(); c.moveTo(axisX, 0); c.lineTo(axisX, H); c.stroke();
+  c.lineWidth = 1; c.setLineDash([4,8]);
+  c.beginPath(); c.moveTo(axisX,0); c.lineTo(axisX,H); c.stroke();
   c.setLineDash([]);
 
-  const startDeg = -Math.ceil(halfFov);
-  const endDeg   =  Math.ceil(halfFov);
-
-  for (let d = startDeg; d <= endDeg; d++) {
+  for (let d = -Math.ceil(halfFov); d <= Math.ceil(halfFov); d++) {
     const y = cy - d * pxPerDeg;
     if (y < -2 || y > H + 2) continue;
-    const isMajor = d % 10 === 0;
-    const isMid   = d % 5  === 0;
+    const isMajor = d % 10 === 0, isMid = d % 5 === 0;
     let tickW, strokeW, alpha;
-    if (isMajor)    { tickW = 34; strokeW = 1.5; alpha = 0.95; }
-    else if (isMid) { tickW = 20; strokeW = 1.0; alpha = 0.65; }
-    else            { tickW = 11; strokeW = 0.7; alpha = 0.38; }
-
-    c.strokeStyle = `rgba(0,255,0,${alpha})`;
-    c.lineWidth = strokeW;
-    c.beginPath();
-    c.moveTo(axisX - tickW / 2, y); c.lineTo(axisX + tickW / 2, y); c.stroke();
-
+    if (isMajor)    { tickW=34; strokeW=1.5; alpha=0.95; }
+    else if (isMid) { tickW=20; strokeW=1.0; alpha=0.65; }
+    else            { tickW=11; strokeW=0.7; alpha=0.38; }
+    c.strokeStyle = `rgba(0,255,0,${alpha})`; c.lineWidth = strokeW;
+    c.beginPath(); c.moveTo(axisX-tickW/2,y); c.lineTo(axisX+tickW/2,y); c.stroke();
     if (isMajor) {
-      const label = d + '°';
-      c.font = '700 11px "Courier New", monospace';
-      c.textAlign = 'left'; c.textBaseline = 'middle';
+      const label = d+'°';
+      c.font = '700 11px "Courier New",monospace';
+      c.textAlign='left'; c.textBaseline='middle';
       const tw = c.measureText(label).width;
-      c.fillStyle = 'rgba(0,0,0,0.45)';
-      c.fillRect(axisX + 22, y - 8, tw + 6, 16);
-      c.fillStyle = '#00ff00'; c.globalAlpha = 0.9;
-      c.fillText(label, axisX + 24, y);
-      c.globalAlpha = 1.0;
+      c.fillStyle='rgba(0,0,0,0.45)'; c.fillRect(axisX+22,y-8,tw+6,16);
+      c.fillStyle='#00ff00'; c.globalAlpha=0.9; c.fillText(label,axisX+24,y); c.globalAlpha=1;
     }
   }
 
-  const cs = 18;
-  c.strokeStyle = 'rgba(0,255,0,0.7)'; c.lineWidth = 1.2;
+  c.strokeStyle='rgba(0,255,0,0.7)'; c.lineWidth=1.2;
   c.beginPath();
-  c.moveTo(axisX - cs, cy); c.lineTo(axisX - 5, cy);
-  c.moveTo(axisX + 5,  cy); c.lineTo(axisX + cs, cy);
-  c.moveTo(axisX, cy - cs); c.lineTo(axisX, cy - 5);
-  c.moveTo(axisX, cy + 5);  c.lineTo(axisX, cy + cs);
+  c.moveTo(axisX-18,cy); c.lineTo(axisX-5,cy);
+  c.moveTo(axisX+5,cy);  c.lineTo(axisX+18,cy);
+  c.moveTo(axisX,cy-18); c.lineTo(axisX,cy-5);
+  c.moveTo(axisX,cy+5);  c.lineTo(axisX,cy+18);
   c.stroke();
-  c.strokeStyle = '#00ff00'; c.lineWidth = 1.5;
-  c.strokeRect(axisX - 5, cy - 5, 10, 10);
+  c.strokeStyle='#00ff00'; c.lineWidth=1.5; c.strokeRect(axisX-5,cy-5,10,10);
 
-  [-1, 1].forEach(side => {
-    const ey = cy - side * halfFov * pxPerDeg;
-    if (ey < 0 || ey > H) return;
-    c.strokeStyle = 'rgba(0,255,0,0.55)'; c.lineWidth = 1;
-    c.beginPath(); c.moveTo(axisX - 26, ey); c.lineTo(axisX + 26, ey); c.stroke();
-    const label = (side > 0 ? '+' : '-') + halfFov.toFixed(1) + '°';
-    c.font = '700 9px "Courier New", monospace';
-    c.textAlign = 'left'; c.textBaseline = 'middle';
-    const tw = c.measureText(label).width;
-    c.fillStyle = 'rgba(0,0,0,0.5)';
-    c.fillRect(axisX + 30, ey - 8, tw + 6, 16);
-    c.fillStyle = '#00cc00'; c.fillText(label, axisX + 32, ey);
+  [-1,1].forEach(side => {
+    const ey = cy - side*halfFov*pxPerDeg;
+    if (ey<0||ey>H) return;
+    c.strokeStyle='rgba(0,255,0,0.55)'; c.lineWidth=1;
+    c.beginPath(); c.moveTo(axisX-26,ey); c.lineTo(axisX+26,ey); c.stroke();
+    const label=(side>0?'+':'-')+halfFov.toFixed(1)+'°';
+    c.font='700 9px "Courier New",monospace'; c.textAlign='left'; c.textBaseline='middle';
+    const tw=c.measureText(label).width;
+    c.fillStyle='rgba(0,0,0,0.5)'; c.fillRect(axisX+30,ey-8,tw+6,16);
+    c.fillStyle='#00cc00'; c.fillText(label,axisX+32,ey);
   });
 
-  c.strokeStyle = 'rgba(0,255,0,0.18)'; c.lineWidth = 0.8;
-  c.beginPath(); c.moveTo(0, cy); c.lineTo(W, cy); c.stroke();
+  c.strokeStyle='rgba(0,255,0,0.18)'; c.lineWidth=0.8;
+  c.beginPath(); c.moveTo(0,cy); c.lineTo(W,cy); c.stroke();
 
   const now = new Date().toLocaleTimeString();
-  c.font = '600 10px "Courier New", monospace';
-  c.textAlign = 'left'; c.textBaseline = 'top';
-  c.fillStyle = 'rgba(0,0,0,0.4)'; c.fillRect(12, 14, 126, 32);
-  c.fillStyle = '#00ff00'; c.globalAlpha = 0.55;
-  c.fillText('FIELDVIEW', 16, 18); c.fillText(now, 16, 31);
-  c.globalAlpha = 1.0;
+  c.font='600 10px "Courier New",monospace'; c.textAlign='left'; c.textBaseline='top';
+  c.fillStyle='rgba(0,0,0,0.4)'; c.fillRect(12,14,126,32);
+  c.fillStyle='#00ff00'; c.globalAlpha=0.55;
+  c.fillText('FIELDVIEW',16,18); c.fillText(now,16,31); c.globalAlpha=1;
   c.restore();
 }
 </script>
