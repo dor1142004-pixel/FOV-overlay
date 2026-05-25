@@ -99,7 +99,36 @@
     background: rgba(0,0,0,0.55); padding: 6px 16px; border-radius: 6px; white-space: nowrap;
   }
 
-  /* record button */
+  /* level indicator */
+  #level-wrap {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    display: none; flex-direction: column; align-items: center; gap: 6px; z-index: 10;
+  }
+  #level-wrap.visible { display: flex; }
+  #level-label { font-size: 9px; color: #666; letter-spacing: 2px; text-transform: uppercase; writing-mode: vertical-rl; transform: rotate(180deg); }
+  #level-bar {
+    width: 14px; height: 160px;
+    background: #111; border: 1px solid #222; border-radius: 8px;
+    position: relative; overflow: hidden;
+  }
+  /* green zone: centre ±1° out of ±5° range = 20% of bar height either side of centre */
+  #level-zone {
+    position: absolute; left: 0; right: 0;
+    height: 20%; top: 40%;  /* ±1° of ±5° = 20% band centred at 50% */
+    background: rgba(0,255,0,0.15); border-top: 1px solid rgba(0,255,0,0.3); border-bottom: 1px solid rgba(0,255,0,0.3);
+  }
+  #level-marker {
+    position: absolute; left: 2px; right: 2px; height: 6px;
+    background: #f33; border-radius: 3px;
+    top: 50%; transform: translateY(-50%);
+    transition: top 0.08s linear, background 0.15s;
+  }
+  #level-marker.ok { background: #0f0; }
+  #level-deg {
+    font-size: 10px; font-weight: 700; color: #666; letter-spacing: 1px;
+    font-family: 'Courier New', monospace;
+  }
+  #level-deg.ok { color: #0f0; }
   #rec-btn {
     position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
     width: 64px; height: 64px; border-radius: 50%; border: 3px solid #fff;
@@ -178,12 +207,27 @@
   <canvas id="comp-canvas" style="display:none;"></canvas>
   <button id="stab-btn">⊕ Stabilize<span id="stab-tilt">0.0°</span></button>
   <button id="cam-back">← Back</button>
+  <button id="level-toggle-btn" style="
+    position:absolute; top:calc(env(safe-area-inset-top,0px) + 56px); left:16px;
+    background:rgba(0,0,0,0.6); border:1px solid #333; border-radius:8px;
+    color:#aaa; font-family:'Courier New',monospace; font-size:10px;
+    letter-spacing:1px; text-transform:uppercase; padding:8px 14px;
+    cursor:pointer; z-index:10; -webkit-tap-highlight-color:transparent;">
+    ◉ Level
+  </button>
+  <div id="level-wrap">
+    <span id="level-label">Tilt</span>
+    <div id="level-bar">
+      <div id="level-zone"></div>
+      <div id="level-marker"></div>
+    </div>
+    <span id="level-deg">0.0°</span>
+  </div>
   <div id="cam-fov-label"></div>
   <div id="rec-btn"><div class="inner"></div></div>
   <div id="rec-indicator"><div class="rec-dot"></div><span id="rec-dur">00:00</span></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5/build/mp4-muxer.min.js"></script>
 <script>
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -266,10 +310,6 @@ document.getElementById('cam-back').addEventListener('click', () => {
 // ── Recording ─────────────────────────────────────────────
 let mediaRecorder = null, recordedChunks = [], isRecording = false;
 let recStartTime = null, recTimerInterval = null;
-let videoEncoder = null, muxer = null;
-let recFrameTime = null, frameCount = 0;
-const TARGET_FPS = 30;
-const FRAME_INTERVAL = 1000 / TARGET_FPS; // ms
 
 const recBtn       = document.getElementById('rec-btn');
 const recIndicator = document.getElementById('rec-indicator');
@@ -277,82 +317,56 @@ const recDur       = document.getElementById('rec-dur');
 
 recBtn.addEventListener('click', () => { if (!isRecording) startRecording(); else stopRecording(); });
 
-function useWebCodecs() {
-  return typeof VideoEncoder !== 'undefined' && typeof Mp4Muxer !== 'undefined';
-}
-
 function startRecording() {
+  recordedChunks = [];
+  const stream = compCanvas.captureStream(30);
+
+  // Safari outputs MP4/H.264 natively — check mp4 first
+  const mimeTypes = [
+    'video/mp4;codecs=avc1',
+    'video/mp4',
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm',
+    ''
+  ];
+  const mimeType = mimeTypes.find(m => m === '' || MediaRecorder.isTypeSupported(m));
+
+  try {
+    mediaRecorder = new MediaRecorder(stream, {
+      ...(mimeType ? { mimeType } : {}),
+      videoBitsPerSecond: 1_500_000   // 1.5 Mbps → ~11 MB/min
+    });
+  } catch(e) {
+    mediaRecorder = new MediaRecorder(stream);
+  }
+
+  mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
+  mediaRecorder.onstop = () => {
+    const type = mediaRecorder.mimeType || 'video/mp4';
+    const ext  = type.includes('webm') ? 'webm' : 'mp4';
+    const blob = new Blob(recordedChunks, { type });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'fov-' + Date.now() + '.' + ext; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  };
+
+  mediaRecorder.start(100);
   isRecording = true;
   recBtn.classList.add('recording');
   recIndicator.style.display = 'flex';
   recStartTime = Date.now();
-  recFrameTime = performance.now();
-  frameCount = 0;
   recTimerInterval = setInterval(updateRecTimer, 500);
-
-  const W = compCanvas.width, H = compCanvas.height;
-
-  if (useWebCodecs()) {
-    // ── WebCodecs path: native H.264 MP4 ──
-    muxer = new Mp4Muxer.Muxer({
-      target: new Mp4Muxer.ArrayBufferTarget(),
-      video: { codec: 'avc', width: W, height: H },
-      fastStart: 'in-memory'
-    });
-    videoEncoder = new VideoEncoder({
-      output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
-      error: e => console.error('Encode error:', e)
-    });
-    videoEncoder.configure({
-      codec: 'avc1.42001f',   // H.264 Baseline
-      width: W, height: H,
-      bitrate: 1_500_000,     // 1.5 Mbps → ~11 MB/min
-      framerate: TARGET_FPS,
-    });
-  } else {
-    // ── Fallback: MediaRecorder webm ──
-    recordedChunks = [];
-    const stream = compCanvas.captureStream(TARGET_FPS);
-    const mimeTypes = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
-    const mimeType = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || '';
-    try { mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType, videoBitsPerSecond: 1_500_000 } : {}); }
-    catch(e) { mediaRecorder = new MediaRecorder(stream); }
-    mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
-    mediaRecorder.onstop = () => {
-      const blob = new Blob(recordedChunks, { type: 'video/webm' });
-      downloadBlob(blob, 'webm');
-    };
-    mediaRecorder.start(100);
-  }
 }
 
-async function stopRecording() {
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
   isRecording = false;
   recBtn.classList.remove('recording');
   recIndicator.style.display = 'none';
   clearInterval(recTimerInterval);
   recDur.textContent = '00:00';
-
-  if (videoEncoder) {
-    recIndicator.style.display = 'flex';
-    recDur.textContent = '⏳';
-    await videoEncoder.flush();
-    muxer.finalize();
-    const blob = new Blob([muxer.target.buffer], { type: 'video/mp4' });
-    recIndicator.style.display = 'none';
-    recDur.textContent = '00:00';
-    downloadBlob(blob, 'mp4');
-    videoEncoder = null; muxer = null;
-  } else if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop();
-  }
-}
-
-function downloadBlob(blob, ext) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'fov-' + Date.now() + '.' + ext; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
 function updateRecTimer() {
@@ -360,18 +374,44 @@ function updateRecTimer() {
   recDur.textContent = String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
 }
 
-// ── Stabilizer ────────────────────────────────────────────
-let stabEnabled = false;
-let pitchOffset = 0; // degrees offset from upright
+// ── Stabilizer + Level indicator ─────────────────────────
+let stabEnabled  = false;
+let levelEnabled = false;
+let rawBeta      = 90;   // raw sensor beta
+let smoothBeta   = 90;   // EMA-smoothed beta
+let pitchOffset  = 0;    // degrees from upright (smoothed)
 let sensorActive = false;
-const stabBtn   = document.getElementById('stab-btn');
-const stabTilt  = document.getElementById('stab-tilt');
+const EMA_ALPHA  = 0.15; // smoothing factor — lower = smoother but slower
+
+const stabBtn        = document.getElementById('stab-btn');
+const stabTilt       = document.getElementById('stab-tilt');
+const levelToggleBtn = document.getElementById('level-toggle-btn');
+const levelWrap      = document.getElementById('level-wrap');
+const levelMarker    = document.getElementById('level-marker');
+const levelDeg       = document.getElementById('level-deg');
+
+const LEVEL_RANGE = 5; // ± degrees shown in the bar
 
 function onOrientation(e) {
   if (e.beta === null) return;
-  // beta=90 = phone upright portrait; deviation from 90 = tilt
-  pitchOffset = e.beta - 90;
+  rawBeta = e.beta;
+  // EMA smoothing — kills the ±2° jitter at the singularity
+  smoothBeta  = EMA_ALPHA * rawBeta + (1 - EMA_ALPHA) * smoothBeta;
+  pitchOffset = smoothBeta - 90; // 90° = phone perfectly upright
+
   if (stabEnabled) stabTilt.textContent = pitchOffset.toFixed(1) + '°';
+
+  if (levelEnabled) {
+    // clamp to ±LEVEL_RANGE for display
+    const clamped = Math.max(-LEVEL_RANGE, Math.min(LEVEL_RANGE, pitchOffset));
+    // map [-LEVEL_RANGE, +LEVEL_RANGE] → [90%, 10%] (top of bar = positive tilt)
+    const pct = 50 - (clamped / LEVEL_RANGE) * 40;
+    levelMarker.style.top = pct + '%';
+    const ok = Math.abs(pitchOffset) <= 1;
+    levelMarker.classList.toggle('ok', ok);
+    levelDeg.textContent = pitchOffset.toFixed(1) + '°';
+    levelDeg.classList.toggle('ok', ok);
+  }
 }
 
 function startSensor() {
@@ -385,10 +425,13 @@ function startSensor() {
           sensorActive = true;
         } else {
           alert('Motion access denied.\nSettings → Safari → Motion & Orientation Access → On');
-          stabBtn.classList.remove('active');
-          stabEnabled = false;
+          stabEnabled = false; stabBtn.classList.remove('active');
+          levelEnabled = false; levelWrap.classList.remove('visible');
         }
-      }).catch(() => { stabEnabled = false; stabBtn.classList.remove('active'); });
+      }).catch(() => {
+        stabEnabled = false; stabBtn.classList.remove('active');
+        levelEnabled = false; levelWrap.classList.remove('visible');
+      });
   } else {
     window.addEventListener('deviceorientation', onOrientation);
     sensorActive = true;
@@ -398,12 +441,16 @@ function startSensor() {
 stabBtn.addEventListener('click', () => {
   stabEnabled = !stabEnabled;
   stabBtn.classList.toggle('active', stabEnabled);
-  if (stabEnabled) {
-    startSensor();
-  } else {
-    pitchOffset = 0;
-    stabTilt.textContent = '0.0°';
-  }
+  if (stabEnabled) startSensor();
+  else { pitchOffset = 0; stabTilt.textContent = '0.0°'; }
+});
+
+levelToggleBtn.addEventListener('click', () => {
+  levelEnabled = !levelEnabled;
+  levelWrap.classList.toggle('visible', levelEnabled);
+  levelToggleBtn.style.borderColor = levelEnabled ? '#0f0' : '#333';
+  levelToggleBtn.style.color       = levelEnabled ? '#0f0' : '#aaa';
+  if (levelEnabled) startSensor();
 });
 function resize() {
   const dpr = window.devicePixelRatio || 1;
@@ -421,25 +468,10 @@ function draw() {
   const W = canvas.offsetWidth, H = canvas.offsetHeight;
   ctx.clearRect(0, 0, W, H);
   drawOverlay(ctx, W, H);
-
   if (isRecording) {
-    const now = performance.now();
-    if (now - recFrameTime >= FRAME_INTERVAL) {
-      recFrameTime = now;
-      compCtx.drawImage(video, 0, 0, compCanvas.width, compCanvas.height);
-      drawOverlay(compCtx, compCanvas.width, compCanvas.height);
-
-      if (videoEncoder && videoEncoder.state === 'configured') {
-        const timestamp = Math.round((now - (recStartTime - Date.now() + Date.now())) * 1000);
-        const ts = frameCount * (1_000_000 / TARGET_FPS); // microseconds
-        const frame = new VideoFrame(compCanvas, { timestamp: ts });
-        videoEncoder.encode(frame, { keyFrame: frameCount % (TARGET_FPS * 2) === 0 });
-        frame.close();
-        frameCount++;
-      }
-    }
+    compCtx.drawImage(video, 0, 0, compCanvas.width, compCanvas.height);
+    drawOverlay(compCtx, compCanvas.width, compCanvas.height);
   }
-
   animId = requestAnimationFrame(draw);
 }
 
