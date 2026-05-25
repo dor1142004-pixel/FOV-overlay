@@ -183,6 +183,7 @@
   <div id="rec-indicator"><div class="rec-dot"></div><span id="rec-dur">00:00</span></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5/build/mp4-muxer.min.js"></script>
 <script>
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -265,50 +266,98 @@ document.getElementById('cam-back').addEventListener('click', () => {
 // ── Recording ─────────────────────────────────────────────
 let mediaRecorder = null, recordedChunks = [], isRecording = false;
 let recStartTime = null, recTimerInterval = null;
+let videoEncoder = null, muxer = null;
+let recFrameTime = null, frameCount = 0;
+const TARGET_FPS = 30;
+const FRAME_INTERVAL = 1000 / TARGET_FPS; // ms
+
 const recBtn       = document.getElementById('rec-btn');
 const recIndicator = document.getElementById('rec-indicator');
 const recDur       = document.getElementById('rec-dur');
 
 recBtn.addEventListener('click', () => { if (!isRecording) startRecording(); else stopRecording(); });
 
+function useWebCodecs() {
+  return typeof VideoEncoder !== 'undefined' && typeof Mp4Muxer !== 'undefined';
+}
+
 function startRecording() {
-  recordedChunks = [];
-  const stream = compCanvas.captureStream(30);
-  const mimeTypes = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'];
-  const mimeType = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || '';
-  try { mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {}); }
-  catch(e) { mediaRecorder = new MediaRecorder(stream); }
-  mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
-  mediaRecorder.onstop = saveVideo;
-  mediaRecorder.start(100);
   isRecording = true;
   recBtn.classList.add('recording');
   recIndicator.style.display = 'flex';
   recStartTime = Date.now();
-  recTimerInterval = setInterval(() => {
-    const s = Math.floor((Date.now() - recStartTime) / 1000);
-    recDur.textContent = String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
-  }, 500);
+  recFrameTime = performance.now();
+  frameCount = 0;
+  recTimerInterval = setInterval(updateRecTimer, 500);
+
+  const W = compCanvas.width, H = compCanvas.height;
+
+  if (useWebCodecs()) {
+    // ── WebCodecs path: native H.264 MP4 ──
+    muxer = new Mp4Muxer.Muxer({
+      target: new Mp4Muxer.ArrayBufferTarget(),
+      video: { codec: 'avc', width: W, height: H },
+      fastStart: 'in-memory'
+    });
+    videoEncoder = new VideoEncoder({
+      output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+      error: e => console.error('Encode error:', e)
+    });
+    videoEncoder.configure({
+      codec: 'avc1.42001f',   // H.264 Baseline
+      width: W, height: H,
+      bitrate: 1_500_000,     // 1.5 Mbps → ~11 MB/min
+      framerate: TARGET_FPS,
+    });
+  } else {
+    // ── Fallback: MediaRecorder webm ──
+    recordedChunks = [];
+    const stream = compCanvas.captureStream(TARGET_FPS);
+    const mimeTypes = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+    const mimeType = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || '';
+    try { mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType, videoBitsPerSecond: 1_500_000 } : {}); }
+    catch(e) { mediaRecorder = new MediaRecorder(stream); }
+    mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      downloadBlob(blob, 'webm');
+    };
+    mediaRecorder.start(100);
+  }
 }
 
-function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+async function stopRecording() {
   isRecording = false;
   recBtn.classList.remove('recording');
   recIndicator.style.display = 'none';
   clearInterval(recTimerInterval);
   recDur.textContent = '00:00';
+
+  if (videoEncoder) {
+    recIndicator.style.display = 'flex';
+    recDur.textContent = '⏳';
+    await videoEncoder.flush();
+    muxer.finalize();
+    const blob = new Blob([muxer.target.buffer], { type: 'video/mp4' });
+    recIndicator.style.display = 'none';
+    recDur.textContent = '00:00';
+    downloadBlob(blob, 'mp4');
+    videoEncoder = null; muxer = null;
+  } else if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
 }
 
-function saveVideo() {
-  if (!recordedChunks.length) return;
-  const mimeType = mediaRecorder.mimeType || 'video/webm';
-  const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
-  const blob = new Blob(recordedChunks, { type: mimeType });
+function downloadBlob(blob, ext) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = 'fov-' + Date.now() + '.' + ext; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function updateRecTimer() {
+  const s = Math.floor((Date.now() - recStartTime) / 1000);
+  recDur.textContent = String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
 }
 
 // ── Stabilizer ────────────────────────────────────────────
@@ -372,10 +421,25 @@ function draw() {
   const W = canvas.offsetWidth, H = canvas.offsetHeight;
   ctx.clearRect(0, 0, W, H);
   drawOverlay(ctx, W, H);
+
   if (isRecording) {
-    compCtx.drawImage(video, 0, 0, compCanvas.width, compCanvas.height);
-    drawOverlay(compCtx, compCanvas.width, compCanvas.height);
+    const now = performance.now();
+    if (now - recFrameTime >= FRAME_INTERVAL) {
+      recFrameTime = now;
+      compCtx.drawImage(video, 0, 0, compCanvas.width, compCanvas.height);
+      drawOverlay(compCtx, compCanvas.width, compCanvas.height);
+
+      if (videoEncoder && videoEncoder.state === 'configured') {
+        const timestamp = Math.round((now - (recStartTime - Date.now() + Date.now())) * 1000);
+        const ts = frameCount * (1_000_000 / TARGET_FPS); // microseconds
+        const frame = new VideoFrame(compCanvas, { timestamp: ts });
+        videoEncoder.encode(frame, { keyFrame: frameCount % (TARGET_FPS * 2) === 0 });
+        frame.close();
+        frameCount++;
+      }
+    }
   }
+
   animId = requestAnimationFrame(draw);
 }
 
